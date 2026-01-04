@@ -42,6 +42,7 @@ dependencies:
   network_tools: ^6.0.5
   multicast_dns: ^0.3.2
   path_provider: ^2.1.5
+  shared_preferences: ^2.3.3
 
   sqlite3_flutter_libs: 0.5.21
 
