@@ -267,12 +267,18 @@ class _DevicesScreenState extends State<DevicesScreen> {
                                     Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFFF3F4F6),
+                                        color:
+                                            Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? const Color(0xFF374151)
+                                            : const Color(0xFFF3F4F6),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
-                                      child: const Icon(
+                                      child: Icon(
                                         Icons.filter_list,
-                                        color: Color(0xFF6366F1),
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
                                         size: 20,
                                       ),
                                     ),
@@ -339,18 +345,20 @@ class _DevicesScreenState extends State<DevicesScreen> {
   }
 
   Widget _buildFilterTab(String title, bool isSelected) {
+    final theme = Theme.of(context);
+
     return GestureDetector(
       onTap: () => setState(() => _selectedFilter = title),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0xFF6366F1)
-              : Theme.of(context).cardColor,
+          color: isSelected ? theme.colorScheme.primary : theme.cardColor,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: Colors.black.withValues(
+                alpha: theme.brightness == Brightness.dark ? 0.2 : 0.05,
+              ),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -363,9 +371,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
             fontWeight: FontWeight.w600,
             color: isSelected
                 ? Colors.white
-                : Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+                : theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
           ),
         ),
       ),
@@ -389,7 +395,11 @@ class _DevicesScreenState extends State<DevicesScreen> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: Colors.black.withValues(
+                alpha: Theme.of(context).brightness == Brightness.dark
+                    ? 0.2
+                    : 0.05,
+              ),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -459,10 +469,10 @@ class _DevicesScreenState extends State<DevicesScreen> {
                   ),
                   child: Text(
                     _getConnectionType(device),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF06B6D4),
+                      color: const Color(0xFF06B6D4),
                     ),
                   ),
                 ),
@@ -535,7 +545,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
                       : 'Start Scan',
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6366F1),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
@@ -615,6 +625,9 @@ class _DevicesScreenState extends State<DevicesScreen> {
   }
 
   Color _getConnectionTypeColor(ScannedDevice device) {
-    return const Color(0xFFDCFCE7);
+    final theme = Theme.of(context);
+    return theme.brightness == Brightness.dark
+        ? const Color(0xFF0F3460) // Dark blue for dark theme
+        : const Color(0xFFDCFCE7); // Light green for light theme
   }
 }

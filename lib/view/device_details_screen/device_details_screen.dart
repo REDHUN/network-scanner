@@ -1,20 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:netra/common/appconstants/app_colors.dart';
+import 'package:netra/models/network_model/open_port.dart';
 import 'package:netra/models/network_model/scanned_device.dart';
+import 'package:netra/service/port_scanner_service/port_scanner_service.dart';
 
-class DeviceDetailsScreen extends StatelessWidget {
+class DeviceDetailsScreen extends StatefulWidget {
   final ScannedDevice device;
 
   const DeviceDetailsScreen({super.key, required this.device});
 
   @override
+  State<DeviceDetailsScreen> createState() => _DeviceDetailsScreenState();
+}
+
+class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
+  final PortScannerService _portScanner = PortScannerService();
+  List<OpenPort> _openPorts = [];
+  bool _isScanning = false;
+  String _scanType = 'Common Ports';
+  PortScanResult? _lastScanResult;
+
+  @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+            colors: isDark
+                ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
+                : [const Color(0xFF6366F1), const Color(0xFF8B5CF6)],
           ),
         ),
         child: SafeArea(
@@ -64,7 +84,7 @@ class DeviceDetailsScreen extends StatelessWidget {
                       ),
                     ),
                     const Spacer(),
-                    const SizedBox(width: 80), // Balance the back button
+                    const SizedBox(width: 80),
                   ],
                 ),
               ),
@@ -76,11 +96,15 @@ class DeviceDetailsScreen extends StatelessWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: theme.cardTheme.color,
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
+                        color: Colors.black.withValues(
+                          alpha: theme.brightness == Brightness.dark
+                              ? 0.2
+                              : 0.1,
+                        ),
                         blurRadius: 20,
                         offset: const Offset(0, 4),
                       ),
@@ -88,20 +112,13 @@ class DeviceDetailsScreen extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF10B981),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.check_circle,
-                          color: Colors.white,
-                          size: 24,
-                        ),
+                      const Icon(
+                        Icons.check_circle,
+                        color: Color(0xFF10B981),
+                        size: 24,
                       ),
                       const SizedBox(width: 16),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -109,7 +126,8 @@ class DeviceDetailsScreen extends StatelessWidget {
                               'Device Status',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Color(0xFF6B7280),
+                                color: theme.textTheme.bodyMedium?.color
+                                    ?.withValues(alpha: 0.7),
                               ),
                             ),
                             Text(
@@ -117,39 +135,19 @@ class DeviceDetailsScreen extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF1F2937),
+                                color: theme.textTheme.headlineLarge?.color,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.signal_cellular_alt,
-                            color: const Color(0xFF10B981),
-                            size: 16,
-                          ),
-                          const SizedBox(width: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFDCFCE7),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Text(
-                              'Active',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF10B981),
-                              ),
-                            ),
-                          ),
-                        ],
+                      Text(
+                        'Active',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF10B981),
+                        ),
                       ),
                     ],
                   ),
@@ -162,113 +160,54 @@ class DeviceDetailsScreen extends StatelessWidget {
               Expanded(
                 child: Container(
                   width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.only(
+                  decoration: BoxDecoration(
+                    color: theme.scaffoldBackgroundColor,
+                    borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(24),
                       topRight: Radius.circular(24),
                     ),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Connection Details Header
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF6366F1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Connection Details Header
+                          Row(
+                            children: [
+                              Icon(
                                 Icons.info_outline,
-                                color: Colors.white,
+                                color: theme.colorScheme.primary,
                                 size: 20,
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            const Text(
-                              'Connection Details',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF1F2937),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Connection Details',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.textTheme.headlineLarge?.color,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
 
-                        // IP Address
-                        _buildDetailCard(
-                          'IP Address',
-                          device.ip,
-                          'IPv4 • Active',
-                          Icons.tag,
-                          const Color(0xFF6366F1),
-                        ),
-                        const SizedBox(height: 16),
+                          // IP Address
+                          _buildDetailCard(
+                            'IP Address',
+                            widget.device.ip,
+                            'IPv4 • Active',
+                            Icons.tag,
+                            theme.colorScheme.primary,
+                          ),
+                          const SizedBox(height: 16),
 
-                        // MAC Address
-                        _buildDetailCard(
-                          'MAC Address',
-                          device.mac ?? '00:1A:2B:3C:4D:5E',
-                          'Physical Address',
-                          Icons.tag,
-                          const Color(0xFF06B6D4),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Connection Type
-                        _buildDetailCard(
-                          'Connection Type',
-                          device.isGateway ? 'Ethernet' : 'Wi-Fi',
-                          '',
-                          Icons.wifi,
-                          const Color(0xFF10B981),
-                        ),
-                        const SizedBox(height: 32),
-
-                        // Device Information Header
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF59E0B),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                Icons.flash_on,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            const Text(
-                              'Device Information',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF1F2937),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Manufacturer
-                        _buildDetailCard(
-                          'Manufacturer',
-                          _getManufacturer(),
-                          'Verified Vendor',
-                          Icons.business,
-                          const Color(0xFF8B5CF6),
-                        ),
-                      ],
+                          // Port Scanning Section
+                          _buildPortScanSection(),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -280,6 +219,12 @@ class DeviceDetailsScreen extends StatelessWidget {
     );
   }
 
+  String _getDeviceName() {
+    if (widget.device.isGateway) return 'Home Router';
+    if (widget.device.isSelf) return 'This Device';
+    return widget.device.displayName;
+  }
+
   Widget _buildDetailCard(
     String title,
     String value,
@@ -287,14 +232,18 @@ class DeviceDetailsScreen extends StatelessWidget {
     IconData icon,
     Color iconColor,
   ) {
+    final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardTheme.color,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withValues(
+              alpha: theme.brightness == Brightness.dark ? 0.2 : 0.05,
+            ),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -317,18 +266,20 @@ class DeviceDetailsScreen extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                    color: Color(0xFF6B7280),
+                    color: theme.textTheme.bodyMedium?.color?.withValues(
+                      alpha: 0.7,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   value,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1F2937),
+                    color: theme.textTheme.headlineLarge?.color,
                   ),
                 ),
                 if (subtitle.isNotEmpty) ...[
@@ -350,24 +301,722 @@ class DeviceDetailsScreen extends StatelessWidget {
     );
   }
 
-  String _getDeviceName() {
-    if (device.isGateway) return 'Home Router';
-    if (device.isSelf) return 'This Device';
-    if (device.name?.toLowerCase().contains('iphone') == true)
-      return 'iPhone 14 Pro';
-    if (device.name?.toLowerCase().contains('macbook') == true)
-      return 'MacBook Pro';
-    if (device.name?.toLowerCase().contains('tv') == true) return 'Smart TV';
-    return device.displayName;
+  Widget _buildPortScanSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 32),
+        Row(
+          children: [
+            Icon(Icons.security, color: AppColors.iconPrimary, size: 20),
+            const SizedBox(width: 12),
+            Text(
+              'Port Scanner',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).textTheme.headlineLarge?.color,
+              ),
+            ),
+            const Spacer(),
+            GestureDetector(
+              onTap: _showPortReferenceDialog,
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.help_outline,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 20,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardTheme.color,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(
+                  alpha: Theme.of(context).brightness == Brightness.dark
+                      ? 0.2
+                      : 0.05,
+                ),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Scan Type',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).textTheme.headlineLarge?.color,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildScanTypeButton(
+                      'Common Ports',
+                      'Quick scan of 16 common ports',
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildScanTypeButton(
+                      'Top 100',
+                      'Scan top 100 most used ports',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isScanning ? null : _startPortScan,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.buttonPrimary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: _isScanning
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text('Scanning $_scanType...'),
+                          ],
+                        )
+                      : Text('Start $_scanType Scan'),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (_lastScanResult != null) ...[
+          const SizedBox(height: 24),
+          _buildScanResults(),
+        ],
+      ],
+    );
   }
 
-  String _getManufacturer() {
-    if (device.isGateway) return 'TP-Link';
-    if (device.name?.toLowerCase().contains('iphone') == true)
-      return 'Apple Inc.';
-    if (device.name?.toLowerCase().contains('macbook') == true)
-      return 'Apple Inc.';
-    if (device.name?.toLowerCase().contains('tv') == true) return 'Samsung';
-    return 'Intel Corporation';
+  Widget _buildScanTypeButton(String type, String description) {
+    final isSelected = _scanType == type;
+    final theme = Theme.of(context);
+
+    return GestureDetector(
+      onTap: _isScanning ? null : () => setState(() => _scanType = type),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary
+              : (theme.brightness == Brightness.dark
+                    ? const Color(0xFF1E293B)
+                    : const Color(0xFFF9FAFB)),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFF10B981)
+                : (theme.brightness == Brightness.dark
+                      ? const Color(0xFF334155)
+                      : const Color(0xFFE5E7EB)),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              type,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: isSelected
+                    ? Colors.white
+                    : theme.textTheme.headlineLarge?.color,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              description,
+              style: TextStyle(
+                fontSize: 12,
+                color: isSelected
+                    ? Colors.white.withValues(alpha: 0.8)
+                    : theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
+
+  Widget _buildScanResults() {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: theme.brightness == Brightness.dark ? 0.2 : 0.05,
+            ),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.assessment,
+                color: theme.colorScheme.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Scan Results',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: theme.textTheme.headlineLarge?.color,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDCFCE7),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${_lastScanResult!.openPortsCount} open',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF10B981),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildScanStat(
+                  'Total Scanned',
+                  '${_lastScanResult!.totalPortsScanned}',
+                  Icons.search,
+                ),
+              ),
+              Expanded(
+                child: _buildScanStat(
+                  'Open Ports',
+                  '${_lastScanResult!.openPortsCount}',
+                  Icons.lock_open,
+                ),
+              ),
+              Expanded(
+                child: _buildScanStat(
+                  'Scan Time',
+                  '${_lastScanResult!.scanDuration.inSeconds}s',
+                  Icons.timer,
+                ),
+              ),
+            ],
+          ),
+          if (_openPorts.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            const Divider(),
+            const SizedBox(height: 16),
+            Text(
+              'Open Ports',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: theme.textTheme.headlineLarge?.color,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...(_openPorts.take(5).map((port) => _buildPortItem(port))),
+            if (_openPorts.length > 5) ...[
+              const SizedBox(height: 8),
+              Text(
+                'And ${_openPorts.length - 5} more ports...',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: theme.textTheme.bodyMedium?.color?.withValues(
+                    alpha: 0.7,
+                  ),
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScanStat(String label, String value, IconData icon) {
+    final theme = Theme.of(context);
+
+    return Column(
+      children: [
+        Icon(icon, color: theme.colorScheme.primary, size: 16),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: theme.textTheme.headlineLarge?.color,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPortItem(OpenPort port) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: port.isSecure
+                  ? const Color(0xFF10B981)
+                  : const Color(0xFFF59E0B),
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            '${port.port}',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: theme.textTheme.headlineLarge?.color,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              port.service,
+              style: TextStyle(
+                fontSize: 14,
+                color: theme.textTheme.bodyMedium?.color?.withValues(
+                  alpha: 0.7,
+                ),
+              ),
+            ),
+          ),
+          if (port.isSecure)
+            const Icon(Icons.security, color: Color(0xFF10B981), size: 16),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _startPortScan() async {
+    setState(() {
+      _isScanning = true;
+      _openPorts.clear();
+    });
+
+    try {
+      final result = await _portScanner.performComprehensiveScan(
+        widget.device.ip,
+        useCommonPorts: _scanType == 'Common Ports',
+        useTop100: _scanType == 'Top 100',
+        timeout: 1000,
+      );
+
+      setState(() {
+        _lastScanResult = result;
+        _openPorts = result.openPorts;
+        _isScanning = false;
+      });
+    } catch (e) {
+      setState(() => _isScanning = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Scan failed: ${e.toString()}'),
+            backgroundColor: const Color(0xFFEF4444),
+          ),
+        );
+      }
+    }
+  }
+
+  void _showPortReferenceDialog() {
+    final theme = Theme.of(context);
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: theme.cardTheme.color,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            constraints: const BoxConstraints(maxHeight: 600, maxWidth: 500),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Dialog Header
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.book, color: Colors.white, size: 24),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'Port Reference Guide',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: const Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Dialog Content
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildPortCategory(
+                          'Common Secure Ports',
+                          'These ports typically use encryption and are generally safe',
+                          _getSecurePorts(),
+                          const Color(0xFF10B981),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildPortCategory(
+                          'Web Services',
+                          'Ports commonly used for web servers and HTTP services',
+                          _getWebPorts(),
+                          const Color(0xFF06B6D4),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildPortCategory(
+                          'Database Ports',
+                          'Ports used by database management systems',
+                          _getDatabasePorts(),
+                          const Color(0xFF8B5CF6),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildPortCategory(
+                          'High Risk Ports',
+                          'These ports may pose security risks if exposed',
+                          _getHighRiskPorts(),
+                          const Color(0xFFEF4444),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPortCategory(
+    String title,
+    String description,
+    List<PortInfo> ports,
+    Color color,
+  ) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: theme.brightness == Brightness.dark ? 0.2 : 0.05,
+            ),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 4,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: theme.textTheme.headlineLarge?.color,
+                      ),
+                    ),
+                    Text(
+                      description,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: theme.textTheme.bodyMedium?.color?.withValues(
+                          alpha: 0.7,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ...ports.map((port) => _buildPortReferenceItem(port, color)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPortReferenceItem(PortInfo port, Color color) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Container(
+            width: 60,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              '${port.port}',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  port.service,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: theme.textTheme.headlineLarge?.color,
+                  ),
+                ),
+                Text(
+                  port.description,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: theme.textTheme.bodyMedium?.color?.withValues(
+                      alpha: 0.7,
+                    ),
+                  ),
+                ),
+                if (port.riskLevel.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _getRiskColor(
+                        port.riskLevel,
+                      ).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '${port.riskLevel} Risk',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: _getRiskColor(port.riskLevel),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getRiskColor(String riskLevel) {
+    switch (riskLevel.toLowerCase()) {
+      case 'high':
+        return const Color(0xFFEF4444);
+      case 'medium':
+        return const Color(0xFFF59E0B);
+      case 'low':
+        return const Color(0xFF10B981);
+      default:
+        return const Color(0xFF6B7280);
+    }
+  }
+
+  List<PortInfo> _getSecurePorts() {
+    return [
+      PortInfo(22, 'SSH', 'Secure Shell - encrypted remote access', 'Low'),
+      PortInfo(443, 'HTTPS', 'HTTP Secure - encrypted web traffic', 'Low'),
+      PortInfo(993, 'IMAPS', 'IMAP over SSL - secure email retrieval', 'Low'),
+      PortInfo(995, 'POP3S', 'POP3 over SSL - secure email retrieval', 'Low'),
+      PortInfo(465, 'SMTPS', 'SMTP over SSL - secure email sending', 'Low'),
+      PortInfo(8443, 'HTTPS-Alt', 'Alternative HTTPS port', 'Low'),
+    ];
+  }
+
+  List<PortInfo> _getWebPorts() {
+    return [
+      PortInfo(
+        80,
+        'HTTP',
+        'HyperText Transfer Protocol - web traffic',
+        'Medium',
+      ),
+      PortInfo(8080, 'HTTP-Alt', 'Alternative HTTP port - web proxy', 'Medium'),
+      PortInfo(
+        8000,
+        'HTTP-Alt',
+        'Alternative HTTP port - development',
+        'Medium',
+      ),
+      PortInfo(3000, 'HTTP-Dev', 'Development web server', 'Medium'),
+      PortInfo(8888, 'HTTP-Alt', 'Alternative HTTP port', 'Medium'),
+    ];
+  }
+
+  List<PortInfo> _getDatabasePorts() {
+    return [
+      PortInfo(3306, 'MySQL', 'MySQL Database Server', 'High'),
+      PortInfo(5432, 'PostgreSQL', 'PostgreSQL Database Server', 'High'),
+      PortInfo(1433, 'MSSQL', 'Microsoft SQL Server', 'High'),
+      PortInfo(27017, 'MongoDB', 'MongoDB Database Server', 'High'),
+      PortInfo(6379, 'Redis', 'Redis In-Memory Database', 'High'),
+      PortInfo(5984, 'CouchDB', 'CouchDB Database Server', 'High'),
+    ];
+  }
+
+  List<PortInfo> _getHighRiskPorts() {
+    return [
+      PortInfo(21, 'FTP', 'File Transfer Protocol - unencrypted', 'High'),
+      PortInfo(23, 'Telnet', 'Telnet - unencrypted remote access', 'High'),
+      PortInfo(135, 'RPC', 'Microsoft RPC - often exploited', 'High'),
+      PortInfo(139, 'NetBIOS', 'NetBIOS Session Service', 'High'),
+      PortInfo(445, 'SMB', 'Server Message Block - file sharing', 'High'),
+      PortInfo(1723, 'PPTP', 'Point-to-Point Tunneling Protocol', 'High'),
+    ];
+  }
+}
+
+class PortInfo {
+  final int port;
+  final String service;
+  final String description;
+  final String riskLevel;
+
+  PortInfo(this.port, this.service, this.description, this.riskLevel);
 }

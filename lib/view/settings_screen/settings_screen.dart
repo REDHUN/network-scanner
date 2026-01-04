@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:netra/common/appconstants/app_colors.dart';
 import 'package:netra/common/widgets/network_pattern_painter.dart';
 import 'package:netra/viewmodels/theme_viewmodel/theme_viewmodel.dart';
 import 'package:provider/provider.dart';
@@ -35,7 +36,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     child: const Icon(
                       Icons.settings,
-                      color: Colors.white,
+                      color: AppColors.white,
                       size: 24,
                     ),
                   ),
@@ -96,7 +97,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       children: [
                         Icon(
                           Icons.shield_outlined,
-                          color: Colors.white,
+                          color: AppColors.white,
                           size: 48,
                         ),
                         SizedBox(height: 16),
@@ -106,7 +107,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: AppColors.white,
                             ),
                           ),
                         ),
@@ -145,7 +146,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               //             ),
               //             child: const Icon(
               //               Icons.flash_on,
-              //               color: Colors.white,
+              //               color: AppColors.white,
               //               size: 20,
               //             ),
               //           ),
@@ -261,13 +262,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? Colors.white.withValues(alpha: 0.2)
+                    ? AppColors.white.withValues(alpha: 0.2)
                     : const Color(0xFFE5E7EB),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
                 icon,
-                color: isSelected ? Colors.white : const Color(0xFF6B7280),
+                color: isSelected ? AppColors.white : const Color(0xFF6B7280),
                 size: 16,
               ),
             ),
@@ -282,7 +283,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: isSelected
-                          ? Colors.white
+                          ? AppColors.white
                           : const Color(0xFF1F2937),
                     ),
                   ),
@@ -291,7 +292,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     style: TextStyle(
                       fontSize: 12,
                       color: isSelected
-                          ? Colors.white.withValues(alpha: 0.8)
+                          ? AppColors.white.withValues(alpha: 0.8)
                           : const Color(0xFF6B7280),
                     ),
                   ),
@@ -301,7 +302,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             if (isSelected)
               const Icon(
                 Icons.radio_button_checked,
-                color: Colors.white,
+                color: AppColors.white,
                 size: 20,
               )
             else
@@ -345,7 +346,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               color: iconColor,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, color: Colors.white, size: 20),
+            child: Icon(icon, color: AppColors.white, size: 20),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -411,7 +412,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     child: const Icon(
                       Icons.palette,
-                      color: Colors.white,
+                      color: AppColors.white,
                       size: 20,
                     ),
                   ),
@@ -466,30 +467,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             Icon(
                               Icons.wb_sunny,
                               color: !themeVM.isDarkMode
-                                  ? Colors.white
+                                  ? AppColors.white
                                   : const Color(0xFF6B7280),
                               size: 20,
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              'Light Theme',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: !themeVM.isDarkMode
-                                    ? Colors.white
-                                    : Theme.of(
-                                        context,
-                                      ).textTheme.bodyLarge?.color,
+                            Flexible(
+                              fit: FlexFit.loose,
+                              child: Text(
+                                'Light Theme',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: !themeVM.isDarkMode
+                                      ? AppColors.white
+                                      : Theme.of(
+                                          context,
+                                        ).textTheme.bodyLarge?.color,
+                                ),
                               ),
                             ),
-                            const Spacer(),
+                            SizedBox(width: 4),
                             Icon(
                               !themeVM.isDarkMode
                                   ? Icons.radio_button_checked
                                   : Icons.radio_button_unchecked,
                               color: !themeVM.isDarkMode
-                                  ? Colors.white
+                                  ? AppColors.white
                                   : const Color(0xFF9CA3AF),
                               size: 16,
                             ),
@@ -521,30 +525,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             Icon(
                               Icons.dark_mode,
                               color: themeVM.isDarkMode
-                                  ? Colors.white
+                                  ? AppColors.white
                                   : const Color(0xFF6B7280),
                               size: 20,
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              'Dark Theme',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: themeVM.isDarkMode
-                                    ? Colors.white
-                                    : Theme.of(
-                                        context,
-                                      ).textTheme.bodyLarge?.color,
+                            Flexible(
+                              fit: FlexFit.loose,
+                              child: Text(
+                                'Dark Theme',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: themeVM.isDarkMode
+                                      ? AppColors.white
+                                      : Theme.of(
+                                          context,
+                                        ).textTheme.bodyLarge?.color,
+                                ),
                               ),
                             ),
-                            const Spacer(),
+                            SizedBox(width: 4),
                             Icon(
                               themeVM.isDarkMode
                                   ? Icons.radio_button_checked
                                   : Icons.radio_button_unchecked,
                               color: themeVM.isDarkMode
-                                  ? Colors.white
+                                  ? AppColors.white
                                   : const Color(0xFF9CA3AF),
                               size: 16,
                             ),
