@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:netra/service/network_scanner_service/network_scanner_service.dart';
-import 'package:netra/view/main_navigation/main_navigation.dart';
+import 'package:netra/view/splash_screen/splash_screen.dart';
 import 'package:netra/viewmodels/network_viewmodel/network_viewmodel.dart';
 import 'package:netra/viewmodels/scanner_viewmodel/scanner_viewmodel.dart';
 import 'package:netra/viewmodels/theme_viewmodel/theme_viewmodel.dart';
@@ -51,7 +51,7 @@ class MyApp extends StatelessWidget {
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: themeVM.themeMode,
-            home: const MainNavigation(),
+            home: const SplashScreen(),
             debugShowCheckedModeBanner: false,
           );
         },

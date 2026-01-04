@@ -55,8 +55,8 @@ class _MainNavigationState extends State<MainNavigation> {
           type: BottomNavigationBarType.fixed,
           backgroundColor: Colors.transparent,
           elevation: 0,
-          selectedItemColor: const Color(0xFF6366F1),
-          unselectedItemColor: const Color(0xFF9CA3AF),
+          selectedItemColor: Theme.of(context).colorScheme.primary,
+          unselectedItemColor: Colors.black,
           selectedLabelStyle: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
@@ -64,7 +64,9 @@ class _MainNavigationState extends State<MainNavigation> {
           unselectedLabelStyle: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
+            color: Colors.black,
           ),
+          unselectedIconTheme: IconThemeData(color: Colors.black),
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
 

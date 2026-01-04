@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:netra/common/appconstants/app_colors.dart';
-import 'package:netra/common/widgets/network_pattern_painter.dart';
 import 'package:netra/viewmodels/theme_viewmodel/theme_viewmodel.dart';
 import 'package:provider/provider.dart';
 
@@ -12,9 +10,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _autoRescan = false;
-  bool _newDeviceAlerts = true;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -28,357 +23,105 @@ class _SettingsScreenState extends State<SettingsScreen> {
               // Header
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF6366F1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.settings,
-                      color: AppColors.white,
-                      size: 24,
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardTheme.color,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.arrow_back,
+                        color: Theme.of(context).textTheme.headlineLarge?.color,
+                        size: 20,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Settings',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(
-                              context,
-                            ).textTheme.headlineLarge?.color,
-                          ),
-                        ),
-                        Text(
-                          'Configure your scanner preferences',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Theme.of(context).textTheme.bodyMedium?.color
-                                ?.withValues(alpha: 0.7),
-                          ),
-                        ),
-                      ],
+                  const Spacer(),
+                  Text(
+                    'Settings',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).textTheme.headlineLarge?.color,
                     ),
                   ),
+                  const Spacer(),
+                  const SizedBox(width: 44), // Balance the back button
                 ],
               ),
               const SizedBox(height: 32),
 
-              // Customize Experience Banner
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF8B5CF6), Color(0xFF06B6D4)],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Stack(
-                  children: [
-                    // Background pattern
-                    Positioned.fill(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: CustomPaint(painter: SettingsPatternPainter()),
-                      ),
-                    ),
-                    // Content
-                    const Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.shield_outlined,
-                          color: AppColors.white,
-                          size: 48,
-                        ),
-                        SizedBox(height: 16),
-                        Center(
-                          child: Text(
-                            'Customize Your Experience',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.white,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+              // APPEARANCE Section
+              Text(
+                'APPEARANCE',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+                  letterSpacing: 1.2,
                 ),
               ),
+              const SizedBox(height: 16),
+
+              // App Theme Card
+              _buildThemeCard(),
               const SizedBox(height: 32),
 
-              // Scan Intensity Section
-              // Container(
-              //   width: double.infinity,
-              //   padding: const EdgeInsets.all(20),
-              //   decoration: BoxDecoration(
-              //     color: Theme.of(context).cardColor,
-              //     borderRadius: BorderRadius.circular(16),
-              //     boxShadow: [
-              //       BoxShadow(
-              //         color: Colors.black.withValues(alpha: 0.05),
-              //         blurRadius: 10,
-              //         offset: const Offset(0, 2),
-              //       ),
-              //     ],
-              //   ),
-              //   child: Column(
-              //     crossAxisAlignment: CrossAxisAlignment.start,
-              //     children: [
-              //       Row(
-              //         children: [
-              //           Container(
-              //             padding: const EdgeInsets.all(8),
-              //             decoration: BoxDecoration(
-              //               color: const Color(0xFF6366F1),
-              //               borderRadius: BorderRadius.circular(8),
-              //             ),
-              //             child: const Icon(
-              //               Icons.flash_on,
-              //               color: AppColors.white,
-              //               size: 20,
-              //             ),
-              //           ),
-              //           const SizedBox(width: 12),
-              //           const Expanded(
-              //             child: Column(
-              //               crossAxisAlignment: CrossAxisAlignment.start,
-              //               children: [
-              //                 Text(
-              //                   'Scan Intensity',
-              //                   style: TextStyle(
-              //                     fontSize: 16,
-              //                     fontWeight: FontWeight.w600,
-              //                     color: Color(0xFF1F2937),
-              //                   ),
-              //                 ),
-              //                 Text(
-              //                   'Adjust scan speed and thoroughness',
-              //                   style: TextStyle(
-              //                     fontSize: 14,
-              //                     color: Color(0xFF6B7280),
-              //                   ),
-              //                 ),
-              //               ],
-              //             ),
-              //           ),
-              //         ],
-              //       ),
-              //       const SizedBox(height: 20),
-              //       _buildScanOption(
-              //         'Safe',
-              //         'Minimal network impact, slower scan',
-              //         false,
-              //         Icons.shield_outlined,
-              //       ),
-              //       const SizedBox(height: 12),
-              //       _buildScanOption(
-              //         'Balanced',
-              //         'Recommended for most networks',
-              //         true,
-              //         Icons.flash_on,
-              //       ),
-              //       const SizedBox(height: 12),
-              //       _buildScanOption(
-              //         'Fast',
-              //         'Quick scan, may miss some devices',
-              //         false,
-              //         Icons.speed,
-              //       ),
-              //     ],
-              //   ),
-              // ),
-              // const SizedBox(height: 24),
+              // SUPPORT & INFO Section
+              Text(
+                'SUPPORT & INFO',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 16),
 
-              // // Settings Options
-              // _buildSettingCard(
-              //   'Auto Re-scan',
-              //   'Automatically scan every 5 minutes',
-              //   _autoRescan,
-              //   (value) => setState(() => _autoRescan = value),
-              //   Icons.refresh,
-              //   const Color(0xFF06B6D4),
-              // ),
-              // const SizedBox(height: 16),
-              // _buildSettingCard(
-              //   'New Device Alerts',
-              //   'Notify when new devices join',
-              //   _newDeviceAlerts,
-              //   (value) => setState(() => _newDeviceAlerts = value),
-              //   Icons.notifications,
-              //   const Color(0xFF8B5CF6),
-              // ),
-              // const SizedBox(height: 16),
-              _buildThemeCard(),
-              const SizedBox(height: 24),
-
-              // Additional Options
-              _buildMenuCard('About', Icons.info_outline),
-              const SizedBox(height: 12),
+              // Help & Support Card
               _buildMenuCard('Help & Support', Icons.help_outline),
               const SizedBox(height: 12),
-              _buildMenuCard('Privacy Policy', Icons.privacy_tip_outlined),
+
+              // Privacy Policy Card
+              _buildMenuCard('Privacy Policy', Icons.shield_outlined),
+              const SizedBox(height: 12),
+
+              // About Card
+              _buildMenuCard('About', Icons.info_outline),
+              const SizedBox(height: 32),
+
+              const SizedBox(height: 16),
+
+              // Version info
+              Center(
+                child: Text(
+                  'Network Monitor v2.1.0 (Build 405)',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildScanOption(
-    String title,
-    String subtitle,
-    bool isSelected,
-    IconData icon,
-  ) {
-    return GestureDetector(
-      onTap: () => setState(() {}),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF6366F1) : const Color(0xFFF9FAFB),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected
-                ? const Color(0xFF6366F1)
-                : const Color(0xFFE5E7EB),
-            width: 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? AppColors.white.withValues(alpha: 0.2)
-                    : const Color(0xFFE5E7EB),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                icon,
-                color: isSelected ? AppColors.white : const Color(0xFF6B7280),
-                size: 16,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: isSelected
-                          ? AppColors.white
-                          : const Color(0xFF1F2937),
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isSelected
-                          ? AppColors.white.withValues(alpha: 0.8)
-                          : const Color(0xFF6B7280),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (isSelected)
-              const Icon(
-                Icons.radio_button_checked,
-                color: AppColors.white,
-                size: 20,
-              )
-            else
-              const Icon(
-                Icons.radio_button_unchecked,
-                color: Color(0xFF9CA3AF),
-                size: 20,
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSettingCard(
-    String title,
-    String subtitle,
-    bool value,
-    Function(bool) onChanged,
-    IconData icon,
-    Color iconColor,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: iconColor,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: AppColors.white, size: 20),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).textTheme.bodyLarge?.color,
-                  ),
-                ),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeColor: const Color(0xFF6366F1),
-          ),
-        ],
       ),
     );
   }
@@ -389,7 +132,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
+            color: Theme.of(context).cardTheme.color,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
@@ -405,159 +148,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF59E0B),
-                      borderRadius: BorderRadius.circular(8),
+                      color: const Color(0xFF2C2C2E),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
                       Icons.palette,
-                      color: AppColors.white,
+                      color: Colors.white,
                       size: 20,
                     ),
                   ),
                   const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Theme',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).textTheme.bodyLarge?.color,
-                          ),
-                        ),
-                        Text(
-                          'Choose your preferred theme',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Theme.of(context).textTheme.bodyMedium?.color
-                                ?.withValues(alpha: 0.7),
-                          ),
-                        ),
-                      ],
-                    ),
+                  const Text(
+                    'App Theme',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
               const SizedBox(height: 20),
               Row(
                 children: [
+                  // Light Theme
                   Expanded(
-                    child: GestureDetector(
-                      onTap: () => themeVM.setTheme(false),
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: !themeVM.isDarkMode
-                              ? const Color(0xFF6366F1)
-                              : Theme.of(context).scaffoldBackgroundColor,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: !themeVM.isDarkMode
-                                ? const Color(0xFF6366F1)
-                                : const Color(0xFFE5E7EB),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.wb_sunny,
-                              color: !themeVM.isDarkMode
-                                  ? AppColors.white
-                                  : const Color(0xFF6B7280),
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Flexible(
-                              fit: FlexFit.loose,
-                              child: Text(
-                                'Light Theme',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: !themeVM.isDarkMode
-                                      ? AppColors.white
-                                      : Theme.of(
-                                          context,
-                                        ).textTheme.bodyLarge?.color,
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: 4),
-                            Icon(
-                              !themeVM.isDarkMode
-                                  ? Icons.radio_button_checked
-                                  : Icons.radio_button_unchecked,
-                              color: !themeVM.isDarkMode
-                                  ? AppColors.white
-                                  : const Color(0xFF9CA3AF),
-                              size: 16,
-                            ),
-                          ],
-                        ),
-                      ),
+                    child: _buildThemeOption(
+                      'Light',
+                      AppThemeMode.light,
+                      themeVM,
+                      _buildLightThemePreview(),
                     ),
                   ),
                   const SizedBox(width: 12),
+                  // Dark Theme
                   Expanded(
-                    child: GestureDetector(
-                      onTap: () => themeVM.setTheme(true),
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: themeVM.isDarkMode
-                              ? const Color(0xFF6366F1)
-                              : Theme.of(context).scaffoldBackgroundColor,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: themeVM.isDarkMode
-                                ? const Color(0xFF6366F1)
-                                : const Color(0xFFE5E7EB),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.dark_mode,
-                              color: themeVM.isDarkMode
-                                  ? AppColors.white
-                                  : const Color(0xFF6B7280),
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Flexible(
-                              fit: FlexFit.loose,
-                              child: Text(
-                                'Dark Theme',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: themeVM.isDarkMode
-                                      ? AppColors.white
-                                      : Theme.of(
-                                          context,
-                                        ).textTheme.bodyLarge?.color,
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: 4),
-                            Icon(
-                              themeVM.isDarkMode
-                                  ? Icons.radio_button_checked
-                                  : Icons.radio_button_unchecked,
-                              color: themeVM.isDarkMode
-                                  ? AppColors.white
-                                  : const Color(0xFF9CA3AF),
-                              size: 16,
-                            ),
-                          ],
-                        ),
-                      ),
+                    child: _buildThemeOption(
+                      'Dark',
+                      AppThemeMode.dark,
+                      themeVM,
+                      _buildDarkThemePreview(),
                     ),
                   ),
                 ],
@@ -569,11 +197,135 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildThemeOption(
+    String label,
+    AppThemeMode mode,
+    ThemeViewModel themeVM,
+    Widget preview,
+  ) {
+    final isSelected = themeVM.appThemeMode == mode;
+
+    return GestureDetector(
+      onTap: () => themeVM.setThemeMode(mode),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? const Color(0xFFD4A574) // Golden accent color for selection
+              : Theme.of(context).cardTheme.color,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFFD4A574)
+                : Colors.grey.withValues(alpha: 0.3),
+            width: 2,
+          ),
+        ),
+        child: Column(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: preview,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: isSelected
+                    ? Colors.white
+                    : Theme.of(context).textTheme.bodyMedium?.color,
+              ),
+            ),
+            const SizedBox(height: 4),
+            if (isSelected)
+              const Icon(Icons.check, color: Colors.white, size: 16)
+            else
+              const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSystemThemePreview() {
+    return Container(
+      width: 40,
+      height: 30,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(5),
+                  bottomLeft: Radius.circular(5),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Color(0xFF2C2C2E),
+                borderRadius: BorderRadius.only(
+                  topRight: Radius.circular(5),
+                  bottomRight: Radius.circular(5),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLightThemePreview() {
+    return Container(
+      width: 40,
+      height: 30,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.4)),
+      ),
+    );
+  }
+
+  Widget _buildDarkThemePreview() {
+    return Container(
+      width: 40,
+      height: 30,
+      decoration: BoxDecoration(
+        color: const Color(0xFF2C2C2E),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.4), width: 1),
+      ),
+    );
+  }
+
   Widget _buildMenuCard(String title, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -586,20 +338,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? const Color(0xFF374151)
-                  : const Color(0xFFF3F4F6),
-              borderRadius: BorderRadius.circular(8),
+              color: const Color(0xFF2C2C2E),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              icon,
-              color: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
-              size: 20,
-            ),
+            child: Icon(icon, color: Colors.white, size: 20),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -608,7 +352,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Theme.of(context).textTheme.bodyLarge?.color,
+                color: Theme.of(context).textTheme.headlineLarge?.color,
               ),
             ),
           ),

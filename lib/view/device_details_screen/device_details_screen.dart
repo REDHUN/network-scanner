@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:netra/models/network_model/scanned_device.dart';
 import 'package:netra/models/network_model/open_port.dart';
+import 'package:netra/models/network_model/scanned_device.dart';
 import 'package:netra/service/port_scanner_service/port_scanner_service.dart';
 import 'package:netra/service/share_service/share_service.dart';
 
@@ -24,18 +24,20 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: isDark
-                ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
-                : [const Color(0xFF6366F1), const Color(0xFF8B5CF6)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFF2C2C2E),
+              const Color(0xFF1C1C1E),
+              const Color(0xFF2C2C2E),
+            ],
+            stops: const [0.0, 0.5, 1.0],
           ),
         ),
         child: SafeArea(
@@ -49,29 +51,16 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
                       child: Container(
-                        padding: const EdgeInsets.all(8),
+                        width: 56,
+                        height: 56,
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(8),
+                          color: Colors.white.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
                         ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.arrow_back,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                            SizedBox(width: 4),
-                            Text(
-                              'Back',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
+                        child: const Icon(
+                          Icons.arrow_back,
+                          color: Colors.white,
+                          size: 24,
                         ),
                       ),
                     ),
@@ -85,26 +74,21 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                       ),
                     ),
                     const Spacer(),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        GestureDetector(
-                          onTap: _shareDeviceInfo,
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(
-                              Icons.share,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ),
+                    GestureDetector(
+                      onTap: _shareDeviceInfo,
+                      child: Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
                         ),
-                        const SizedBox(width: 8),
-                      ],
+                        child: const Icon(
+                          Icons.share,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -115,59 +99,90 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: theme.cardTheme.color,
-                    borderRadius: BorderRadius.circular(16),
+                    color: Colors.white.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(32),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(
-                          alpha: theme.brightness == Brightness.dark
-                              ? 0.2
-                              : 0.1,
-                        ),
+                        color: Colors.black.withValues(alpha: 0.3),
                         blurRadius: 20,
-                        offset: const Offset(0, 4),
+                        offset: const Offset(0, 8),
                       ),
                     ],
                   ),
                   child: Row(
                     children: [
-                      const Icon(
-                        Icons.check_circle,
-                        color: Color(0xFF10B981),
-                        size: 24,
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.devices,
+                          color: Color(0xFFD4A574),
+                          size: 28,
+                        ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Device Status',
+                            const Text(
+                              'DEVICE STATUS',
                               style: TextStyle(
-                                fontSize: 14,
-                                color: theme.textTheme.bodyMedium?.color
-                                    ?.withValues(alpha: 0.7),
+                                color: Colors.white54,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.5,
                               ),
                             ),
-                            Text(
-                              'Online',
+                            const SizedBox(height: 4),
+                            const Text(
+                              'Online & Active',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: theme.textTheme.headlineLarge?.color,
+                                color: Colors.white,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      Text(
-                        'Active',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF10B981),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF30A46C).withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF30A46C),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            const Text(
+                              'ACTIVE',
+                              style: TextStyle(
+                                color: Color(0xFF30A46C),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -184,8 +199,8 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                   decoration: BoxDecoration(
                     color: theme.scaffoldBackgroundColor,
                     borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(24),
-                      topRight: Radius.circular(24),
+                      topLeft: Radius.circular(32),
+                      topRight: Radius.circular(32),
                     ),
                   ),
                   child: Padding(
@@ -197,31 +212,32 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                           // Connection Details Header
                           Row(
                             children: [
-                              Icon(
-                                Icons.info_outline,
-                                color: theme.colorScheme.primary,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 12),
                               Text(
                                 'Connection Details',
                                 style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
                                   color: theme.textTheme.headlineLarge?.color,
+                                ),
+                              ),
+                              const Spacer(),
+                              Text(
+                                'Updated just now',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: theme.textTheme.bodyMedium?.color
+                                      ?.withValues(alpha: 0.6),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 16),
 
                           // IP Address
                           _buildDetailCard(
-                            'IP Address',
+                            'IP ADDRESS',
                             widget.device.ip,
-                            'IPv4 • Active',
-                            Icons.tag,
-                            theme.colorScheme.primary,
+                            Icons.devices,
                           ),
                           const SizedBox(height: 16),
 
@@ -246,13 +262,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
     return widget.device.displayName;
   }
 
-  Widget _buildDetailCard(
-    String title,
-    String value,
-    String subtitle,
-    IconData icon,
-    Color iconColor,
-  ) {
+  Widget _buildDetailCard(String label, String value, IconData icon) {
     final theme = Theme.of(context);
 
     return Container(
@@ -262,9 +272,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(
-              alpha: theme.brightness == Brightness.dark ? 0.2 : 0.05,
-            ),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -273,10 +281,10 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: iconColor,
-              borderRadius: BorderRadius.circular(8),
+              color: const Color(0xFF2C2C2E),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: Colors.white, size: 20),
           ),
@@ -286,12 +294,14 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  label,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
                     color: theme.textTheme.bodyMedium?.color?.withValues(
-                      alpha: 0.7,
+                      alpha: 0.6,
                     ),
+                    letterSpacing: 0.5,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -299,22 +309,24 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                   value,
                   style: TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                     color: theme.textTheme.headlineLarge?.color,
                   ),
+                  overflow: TextOverflow.ellipsis,
                 ),
-                if (subtitle.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF10B981),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
               ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              Icons.copy,
+              color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+              size: 16,
             ),
           ),
         ],
@@ -329,13 +341,11 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
         const SizedBox(height: 32),
         Row(
           children: [
-            Icon(Icons.security, color: const Color(0xFF10B981), size: 20),
-            const SizedBox(width: 12),
             Text(
               'Port Scanner',
               style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
                 color: Theme.of(context).textTheme.headlineLarge?.color,
               ),
             ),
@@ -348,19 +358,21 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                 decoration: BoxDecoration(
                   color: Theme.of(
                     context,
-                  ).colorScheme.primary.withValues(alpha: 0.1),
+                  ).textTheme.bodyMedium?.color?.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
                   Icons.help_outline,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 20,
+                  color: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+                  size: 16,
                 ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -368,11 +380,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(
-                  alpha: Theme.of(context).brightness == Brightness.dark
-                      ? 0.2
-                      : 0.05,
-                ),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
@@ -382,11 +390,14 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Scan Type',
+                'SCAN TYPE',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: Theme.of(context).textTheme.headlineLarge?.color,
+                  color: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+                  letterSpacing: 0.5,
                 ),
               ),
               const SizedBox(height: 16),
@@ -410,36 +421,65 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isScanning ? null : _startPortScan,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF10B981),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF2C2C2E), Color(0xFF1C1C1E)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    elevation: 0,
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  child: _isScanning
-                      ? Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
+                  child: ElevatedButton(
+                    onPressed: _isScanning ? null : _startPortScan,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      foregroundColor: Colors.white,
+                      shadowColor: Colors.transparent,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: _isScanning
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Color(0xFFD4A574),
+                                  ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Text('Scanning $_scanType...'),
-                          ],
-                        )
-                      : Text('Start $_scanType Scan'),
+                              const SizedBox(width: 12),
+                              Text('Scanning $_scanType...'),
+                            ],
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFD4A574),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Icon(
+                                  Icons.security,
+                                  color: Color(0xFF2C2C2E),
+                                  size: 16,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text('START $_scanType SCAN'),
+                            ],
+                          ),
+                  ),
                 ),
               ),
             ],
@@ -463,41 +503,51 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isSelected
-              ? const Color(0xFF10B981)
-              : (theme.brightness == Brightness.dark
-                    ? const Color(0xFF1E293B)
-                    : const Color(0xFFF9FAFB)),
+              ? Colors.white.withValues(alpha: 0.05)
+              : theme.cardTheme.color,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected
-                ? const Color(0xFF10B981)
-                : (theme.brightness == Brightness.dark
-                      ? const Color(0xFF334155)
-                      : const Color(0xFFE5E7EB)),
-            width: 1,
+                ? const Color(0xFFD4A574)
+                : Colors.grey.withValues(alpha: 0.3),
+            width: isSelected ? 2 : 1,
           ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              type,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: isSelected
-                    ? Colors.white
-                    : theme.textTheme.headlineLarge?.color,
-              ),
+            Row(
+              children: [
+                Text(
+                  type,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: isSelected
+                        ? const Color(0xFFD4A574)
+                        : theme.textTheme.headlineLarge?.color,
+                  ),
+                ),
+                const Spacer(),
+                if (isSelected)
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFD4A574),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(height: 4),
             Text(
               description,
               style: TextStyle(
                 fontSize: 12,
-                color: isSelected
-                    ? Colors.white.withValues(alpha: 0.8)
-                    : theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+                color: theme.textTheme.bodyMedium?.color?.withValues(
+                  alpha: 0.7,
+                ),
               ),
             ),
           ],
@@ -516,9 +566,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(
-              alpha: theme.brightness == Brightness.dark ? 0.2 : 0.05,
-            ),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -529,17 +577,11 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.assessment,
-                color: theme.colorScheme.primary,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
               Text(
                 'Scan Results',
                 style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
                   color: theme.textTheme.headlineLarge?.color,
                 ),
               ),
@@ -547,16 +589,31 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFDCFCE7),
+                  color: const Color(0xFF30A46C).withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(
-                  '${_lastScanResult!.openPortsCount} open',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF10B981),
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF30A46C),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${_lastScanResult!.openPortsCount} OPEN',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF30A46C),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -566,21 +623,21 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
             children: [
               Expanded(
                 child: _buildScanStat(
-                  'Total Scanned',
+                  'TOTAL SCANNED',
                   '${_lastScanResult!.totalPortsScanned}',
                   Icons.search,
                 ),
               ),
               Expanded(
                 child: _buildScanStat(
-                  'Open Ports',
+                  'OPEN PORTS',
                   '${_lastScanResult!.openPortsCount}',
                   Icons.lock_open,
                 ),
               ),
               Expanded(
                 child: _buildScanStat(
-                  'Scan Time',
+                  'SCAN TIME',
                   '${_lastScanResult!.scanDuration.inSeconds}s',
                   Icons.timer,
                 ),
@@ -592,11 +649,14 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
             const Divider(),
             const SizedBox(height: 16),
             Text(
-              'Open Ports',
+              'OPEN PORTS',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: theme.textTheme.headlineLarge?.color,
+                color: theme.textTheme.bodyMedium?.color?.withValues(
+                  alpha: 0.6,
+                ),
+                letterSpacing: 0.5,
               ),
             ),
             const SizedBox(height: 12),
@@ -623,26 +683,35 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
   Widget _buildScanStat(String label, String value, IconData icon) {
     final theme = Theme.of(context);
 
-    return Column(
-      children: [
-        Icon(icon, color: theme.colorScheme.primary, size: 16),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: theme.textTheme.headlineLarge?.color,
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
           ),
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              color: const Color(0xFFD4A574),
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -658,8 +727,8 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
             height: 8,
             decoration: BoxDecoration(
               color: port.isSecure
-                  ? const Color(0xFF10B981)
-                  : const Color(0xFFF59E0B),
+                  ? const Color(0xFF30A46C)
+                  : const Color(0xFFFF9500),
               shape: BoxShape.circle,
             ),
           ),
@@ -685,7 +754,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
             ),
           ),
           if (port.isSecure)
-            const Icon(Icons.security, color: Color(0xFF10B981), size: 16),
+            const Icon(Icons.security, color: Color(0xFF30A46C), size: 16),
         ],
       ),
     );
@@ -716,7 +785,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Scan failed: ${e.toString()}'),
-            backgroundColor: const Color(0xFFEF4444),
+            backgroundColor: const Color(0xFFFF3B30),
           ),
         );
       }
@@ -742,16 +811,36 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                 // Dialog Header
                 Container(
                   padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary,
-                    borderRadius: const BorderRadius.only(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF2C2C2E),
+                        Color(0xFF1C1C1E),
+                        Color(0xFF2C2C2E),
+                      ],
+                      stops: [0.0, 0.5, 1.0],
+                    ),
+                    borderRadius: BorderRadius.only(
                       topLeft: Radius.circular(16),
                       topRight: Radius.circular(16),
                     ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.book, color: Colors.white, size: 24),
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD4A574),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(
+                          Icons.book,
+                          color: Color(0xFF2C2C2E),
+                          size: 16,
+                        ),
+                      ),
                       const SizedBox(width: 12),
                       const Expanded(
                         child: Text(
@@ -765,10 +854,18 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                       ),
                       GestureDetector(
                         onTap: () => Navigator.of(context).pop(),
-                        child: const Icon(
-                          Icons.close,
-                          color: Colors.white,
-                          size: 24,
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 18,
+                          ),
                         ),
                       ),
                     ],
@@ -785,28 +882,28 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                           'Common Secure Ports',
                           'These ports typically use encryption and are generally safe',
                           _getSecurePorts(),
-                          const Color(0xFF10B981),
+                          const Color(0xFF30A46C),
                         ),
                         const SizedBox(height: 16),
                         _buildPortCategory(
                           'Web Services',
                           'Ports commonly used for web servers and HTTP services',
                           _getWebPorts(),
-                          const Color(0xFF06B6D4),
+                          const Color(0xFF007AFF),
                         ),
                         const SizedBox(height: 16),
                         _buildPortCategory(
                           'Database Ports',
                           'Ports used by database management systems',
                           _getDatabasePorts(),
-                          const Color(0xFF8B5CF6),
+                          const Color(0xFF8E8E93),
                         ),
                         const SizedBox(height: 16),
                         _buildPortCategory(
                           'High Risk Ports',
                           'These ports may pose security risks if exposed',
                           _getHighRiskPorts(),
-                          const Color(0xFFEF4444),
+                          const Color(0xFFFF3B30),
                         ),
                       ],
                     ),
@@ -970,13 +1067,16 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
   Color _getRiskColor(String riskLevel) {
     switch (riskLevel.toLowerCase()) {
       case 'high':
-        return const Color(0xFFEF4444);
+        return const Color(0xFFFF3B30);
       case 'medium':
-        return const Color(0xFFF59E0B);
+        return const Color(0xFFFF9500);
       case 'low':
-        return const Color(0xFF10B981);
+        return const Color(0xFF30A46C);
       default:
-        return const Color(0xFF6B7280);
+        return Theme.of(
+              context,
+            ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6) ??
+            const Color(0xFF8E8E93);
     }
   }
 
@@ -1058,14 +1158,27 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
         SnackBar(
           content: Row(
             children: [
-              const Icon(Icons.check_circle, color: Colors.white, size: 20),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD4A574),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Icon(
+                  Icons.check_circle,
+                  color: Color(0xFF2C2C2E),
+                  size: 16,
+                ),
+              ),
               const SizedBox(width: 12),
               Text(message),
             ],
           ),
-          backgroundColor: const Color(0xFF10B981),
+          backgroundColor: const Color(0xFF2C2C2E),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
       );
     }
@@ -1076,7 +1189,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
-          backgroundColor: const Color(0xFFEF4444),
+          backgroundColor: const Color(0xFFFF3B30),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           duration: const Duration(seconds: 4),

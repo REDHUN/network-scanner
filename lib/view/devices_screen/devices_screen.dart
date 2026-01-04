@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:netra/models/network_model/scanned_device.dart';
+import 'package:netra/service/share_service/share_service.dart';
 import 'package:netra/view/device_details_screen/device_details_screen.dart';
 import 'package:netra/viewmodels/scanner_viewmodel/scanner_viewmodel.dart';
-import 'package:netra/service/share_service/share_service.dart';
 import 'package:provider/provider.dart';
 
 class DevicesScreen extends StatefulWidget {
@@ -19,6 +19,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
   @override
   void initState() {
     super.initState();
+    initFunction();
   }
 
   void initFunction() {
@@ -39,116 +40,46 @@ class _DevicesScreenState extends State<DevicesScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
+        child: Column(
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Row(
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Devices',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(
-                              context,
-                            ).textTheme.headlineLarge?.color,
-                          ),
-                        ),
-                        Consumer<NetworkScannerProvider>(
-                          builder: (context, provider, _) {
-                            final deviceCount = provider.devices.length;
-                            return Text(
-                              '$deviceCount devices found',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.color
-                                    ?.withValues(alpha: 0.7),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      child: Icon(
+                        Icons.arrow_back,
+                        color: Theme.of(context).textTheme.headlineLarge?.color,
+                        size: 24,
+                      ),
                     ),
                   ),
-                  Consumer<NetworkScannerProvider>(
-                    builder: (context, provider, _) {
-                      return Row(
-                        children: [
-                          // Share button
-                          GestureDetector(
-                            onTap: provider.devices.isNotEmpty
-                                ? () => _shareNetworkSummary(provider.devices)
-                                : null,
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).cardColor,
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(
-                                      alpha:
-                                          Theme.of(context).brightness ==
-                                              Brightness.dark
-                                          ? 0.2
-                                          : 0.05,
-                                    ),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Icon(
-                                Icons.share,
-                                color: provider.devices.isNotEmpty
-                                    ? Theme.of(context).colorScheme.primary
-                                    : Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.color
-                                          ?.withValues(alpha: 0.3),
-                                size: 20,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          // Refresh button
-                          GestureDetector(
+                  const Spacer(),
+                  Text(
+                    'Devices',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).textTheme.headlineLarge?.color,
+                    ),
+                  ),
+                  const Spacer(),
+                  Row(
+                    children: [
+                      Consumer<NetworkScannerProvider>(
+                        builder: (context, provider, _) {
+                          return GestureDetector(
                             onTap: () async {
                               if (provider.state != ScanState.scanning) {
-                                // Use Future.microtask to prevent UI blocking
                                 Future.microtask(() => provider.startScan());
                               }
                             },
                             child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).cardColor,
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(
-                                      alpha:
-                                          Theme.of(context).brightness ==
-                                              Brightness.dark
-                                          ? 0.2
-                                          : 0.05,
-                                    ),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
+                              padding: const EdgeInsets.all(8),
                               child: provider.state == ScanState.scanning
                                   ? SizedBox(
                                       width: 20,
@@ -165,276 +96,310 @@ class _DevicesScreenState extends State<DevicesScreen> {
                                     )
                                   : Icon(
                                       Icons.refresh,
-                                      color: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.color
-                                          ?.withValues(alpha: 0.7),
-                                      size: 20,
+                                      color: Theme.of(
+                                        context,
+                                      ).textTheme.headlineLarge?.color,
+                                      size: 24,
                                     ),
                             ),
+                          );
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () {
+                          // Settings or filter action
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          child: Icon(
+                            Icons.settings,
+                            color: Theme.of(
+                              context,
+                            ).textTheme.headlineLarge?.color,
+                            size: 24,
                           ),
-                        ],
-                      );
-                    },
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+            ),
 
-              Expanded(
+            // Content
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: Consumer<NetworkScannerProvider>(
                   builder: (context, provider, _) {
-                    return provider.state == ScanState.scanning
-                        ? Center(
-                            child: Container(
-                              padding: const EdgeInsets.all(32),
-                              child: const CircularProgressIndicator(),
-                            ),
-                          )
-                        : provider.state == ScanState.error
-                        ? Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).cardColor,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: const Color(
-                                  0xFFEF4444,
-                                ).withValues(alpha: 0.2),
-                                width: 1,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.error,
-                                  color: Color(0xFFEF4444),
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Scan failed',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: Theme.of(
-                                            context,
-                                          ).textTheme.bodyLarge?.color,
-                                        ),
-                                      ),
-                                      Text(
-                                        provider.error ?? 'Unknown error',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Theme.of(context)
-                                              .textTheme
-                                              .bodyMedium
-                                              ?.color
-                                              ?.withValues(alpha: 0.7),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : Column(
-                            children: [
-                              // Network Overview Card
-                              Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(20),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).cardColor,
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.05,
-                                      ),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'Network Overview',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: Theme.of(context)
-                                                  .textTheme
-                                                  .bodyMedium
-                                                  ?.color
-                                                  ?.withValues(alpha: 0.7),
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Row(
-                                            children: [
-                                              const Icon(
-                                                Icons.circle,
-                                                color: Color(0xFF10B981),
-                                                size: 8,
-                                              ),
-                                              const SizedBox(width: 6),
-                                              Text(
-                                                '7 Online',
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: Theme.of(
-                                                    context,
-                                                  ).textTheme.bodyLarge?.color,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 16),
-                                              Icon(
-                                                Icons.circle,
-                                                color: Theme.of(context)
-                                                    .textTheme
-                                                    .bodyMedium
-                                                    ?.color
-                                                    ?.withValues(alpha: 0.7),
-                                                size: 8,
-                                              ),
-                                              const SizedBox(width: 6),
-                                              Text(
-                                                '1 Offline',
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: Theme.of(
-                                                    context,
-                                                  ).textTheme.bodyLarge?.color,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color:
-                                            Theme.of(context).brightness ==
-                                                Brightness.dark
-                                            ? const Color(0xFF374151)
-                                            : const Color(0xFFF3F4F6),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Icon(
-                                        Icons.filter_list,
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.primary,
-                                        size: 20,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-
-                              // Filter Tabs
-                              Row(
-                                children: [
-                                  _buildFilterTab(
-                                    'All',
-                                    _selectedFilter == 'All',
-                                  ),
-                                  const SizedBox(width: 12),
-                                  _buildFilterTab(
-                                    'Online',
-                                    _selectedFilter == 'Online',
-                                  ),
-                                  const SizedBox(width: 12),
-                                  _buildFilterTab(
-                                    'Offline',
-                                    _selectedFilter == 'Offline',
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 24),
-
-                              // Devices List
-                              Expanded(
-                                child: Consumer<NetworkScannerProvider>(
-                                  builder: (context, scannerVM, child) {
-                                    if (scannerVM.devices.isEmpty) {
-                                      return _buildEmptyState();
-                                    }
-
-                                    return ListView.separated(
-                                      itemCount: _getFilteredDevices(
-                                        scannerVM.devices,
-                                      ).length,
-                                      separatorBuilder: (context, index) =>
-                                          const SizedBox(height: 12),
-                                      itemBuilder: (context, index) {
-                                        final device = _getFilteredDevices(
-                                          scannerVM.devices,
-                                        )[index];
-                                        return _buildDeviceCard(device);
-                                      },
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
-                          );
+                    if (provider.state == ScanState.scanning) {
+                      return _buildScanningState();
+                    } else if (provider.state == ScanState.error) {
+                      return _buildErrorState(provider);
+                    } else {
+                      return _buildDevicesList(provider);
+                    }
                   },
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildFilterTab(String title, bool isSelected) {
-    final theme = Theme.of(context);
+  Widget _buildScanningState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(
+              Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Scanning network...',
+            style: TextStyle(
+              fontSize: 16,
+              color: Theme.of(context).textTheme.bodyMedium?.color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(NetworkScannerProvider provider) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 64, color: Color(0xFFFF3B30)),
+          const SizedBox(height: 16),
+          Text(
+            'Scan failed',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).textTheme.headlineLarge?.color,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            provider.error ?? 'Unknown error occurred',
+            style: TextStyle(
+              fontSize: 14,
+              color: Theme.of(context).textTheme.bodyMedium?.color,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () => provider.startScan(),
+            child: const Text('Try Again'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDevicesList(NetworkScannerProvider provider) {
+    final devices = provider.devices;
+    final onlineDevices =
+        devices.length; // Assume all scanned devices are online
+    final offlineDevices = 0; // For demo purposes
+
+    return Column(
+      children: [
+        // Stats Cards
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                title: 'Online',
+                count: onlineDevices,
+                subtitle: 'Devices active',
+                isOnline: true,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildStatCard(
+                title: 'Offline',
+                count: offlineDevices,
+                subtitle: 'Last 24 hours',
+                isOnline: false,
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 24),
+
+        // Filter Tabs
+        Row(
+          children: [
+            _buildFilterTab('All', devices.length),
+            const SizedBox(width: 12),
+            _buildFilterTab('Online', onlineDevices),
+            const SizedBox(width: 12),
+            _buildFilterTab('Offline', offlineDevices),
+          ],
+        ),
+
+        const SizedBox(height: 24),
+
+        // Section Header
+        Row(
+          children: [
+            Text(
+              'CONNECTED DEVICES',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+                letterSpacing: 0.5,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              'Sort by Name',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 16),
+
+        // Device List
+        Expanded(
+          child: devices.isEmpty
+              ? _buildEmptyState()
+              : ListView.builder(
+                  itemCount: devices.length,
+                  itemBuilder: (context, index) {
+                    final device = devices[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _buildDeviceCard(device),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatCard({
+    required String title,
+    required int count,
+    required String subtitle,
+    required bool isOnline,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isOnline
+            ? const Color(0xFF2C2C2E)
+            : Theme.of(context).cardTheme.color,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isOnline ? Icons.wifi : Icons.wifi_off,
+                color: isOnline
+                    ? const Color(0xFFD4A574)
+                    : Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  color: isOnline
+                      ? const Color(0xFFD4A574)
+                      : Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            count.toString(),
+            style: TextStyle(
+              color: isOnline
+                  ? Colors.white
+                  : Theme.of(context).textTheme.headlineLarge?.color,
+              fontSize: 32,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: TextStyle(
+              color: isOnline
+                  ? Colors.white70
+                  : Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+              fontSize: 12,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterTab(String title, int count) {
+    final isSelected = _selectedFilter == title;
 
     return GestureDetector(
       onTap: () => setState(() => _selectedFilter = title),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? theme.colorScheme.primary : theme.cardColor,
+          color: isSelected
+              ? const Color(0xFF2C2C2E)
+              : Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(
-                alpha: theme.brightness == Brightness.dark ? 0.2 : 0.05,
-              ),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
         child: Text(
           title,
           style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
             color: isSelected
                 ? Colors.white
-                : theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+                : Theme.of(context).textTheme.bodyMedium?.color,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ),
@@ -442,6 +407,8 @@ class _DevicesScreenState extends State<DevicesScreen> {
   }
 
   Widget _buildDeviceCard(ScannedDevice device) {
+    final isOnline = true; // Assume all scanned devices are online
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -454,35 +421,45 @@ class _DevicesScreenState extends State<DevicesScreen> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(16),
+          color: isOnline
+              ? const Color(0xFF2C2C2E)
+              : Theme.of(context).cardTheme.color?.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(
-                alpha: Theme.of(context).brightness == Brightness.dark
-                    ? 0.2
-                    : 0.05,
-              ),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 10,
-              offset: const Offset(0, 2),
+              offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Row(
           children: [
+            // Device Icon
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: _getDeviceColor(device),
+                color: isOnline
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.color?.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 _getDeviceIcon(device),
-                color: Colors.white,
-                size: 24,
+                color: isOnline
+                    ? Colors.white
+                    : Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+                size: 20,
               ),
             ),
+
             const SizedBox(width: 16),
+
+            // Device Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -490,62 +467,73 @@ class _DevicesScreenState extends State<DevicesScreen> {
                   Text(
                     _getDeviceName(device),
                     style: TextStyle(
+                      color: isOnline
+                          ? Colors.white
+                          : Theme.of(context).textTheme.headlineLarge?.color
+                                ?.withValues(alpha: 0.7),
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Theme.of(context).textTheme.bodyLarge?.color,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    device.ip,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _getDeviceManufacturer(device),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        device.ip,
+                        style: TextStyle(
+                          color: isOnline
+                              ? Colors.white70
+                              : Theme.of(context).textTheme.bodyMedium?.color
+                                    ?.withValues(alpha: 0.5),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                      const Text(
+                        ' • ',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                      Text(
+                        _getConnectionType(device),
+                        style: TextStyle(
+                          color: isOnline
+                              ? Colors.white70
+                              : Theme.of(context).textTheme.bodyMedium?.color
+                                    ?.withValues(alpha: 0.5),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
+
+            // Status Indicators
             Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
+                  width: 8,
+                  height: 8,
                   decoration: BoxDecoration(
-                    color: _getConnectionTypeColor(device),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    _getConnectionType(device),
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF06B6D4),
-                    ),
+                    color: isOnline
+                        ? const Color(0xFFD4A574)
+                        : Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.color?.withValues(alpha: 0.3),
+                    shape: BoxShape.circle,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Icon(
-                  Icons.chevron_right,
-                  color: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
-                  size: 20,
+                  isOnline ? Icons.wifi : Icons.wifi_off,
+                  color: isOnline
+                      ? Colors.white70
+                      : Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.color?.withValues(alpha: 0.3),
+                  size: 16,
                 ),
               ],
             ),
@@ -588,110 +576,37 @@ class _DevicesScreenState extends State<DevicesScreen> {
               ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
             ),
           ),
-          const SizedBox(height: 24),
-          Consumer<NetworkScannerProvider>(
-            builder: (context, provider, _) {
-              return ElevatedButton.icon(
-                onPressed: provider.state == ScanState.scanning
-                    ? null
-                    : () => Future.microtask(() => provider.startScan()),
-                icon: provider.state == ScanState.scanning
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.wifi_find),
-                label: Text(
-                  provider.state == ScanState.scanning
-                      ? 'Scanning...'
-                      : 'Start Scan',
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                ),
-              );
-            },
-          ),
         ],
       ),
     );
   }
 
-  List<ScannedDevice> _getFilteredDevices(List<ScannedDevice> devices) {
-    // For demo purposes, return all devices
-    // In real implementation, filter based on _selectedFilter
-    return devices;
-  }
-
-  Color _getDeviceColor(ScannedDevice device) {
-    if (device.isGateway) return const Color(0xFF6366F1);
-    if (device.isSelf) return const Color(0xFF8B5CF6);
-    if (device.name?.toLowerCase().contains('iphone') == true) {
-      return const Color(0xFF8B5CF6);
-    }
-    if (device.name?.toLowerCase().contains('macbook') == true) {
-      return const Color(0xFF06B6D4);
-    }
-    if (device.name?.toLowerCase().contains('tv') == true) {
-      return const Color(0xFFF59E0B);
-    }
-    return const Color(0xFF3B82F6);
-  }
-
   IconData _getDeviceIcon(ScannedDevice device) {
     if (device.isGateway) return Icons.router;
     if (device.isSelf) return Icons.smartphone;
-    if (device.name?.toLowerCase().contains('iphone') == true) {
-      return Icons.phone_iphone;
-    }
-    if (device.name?.toLowerCase().contains('macbook') == true) {
+    if (device.name?.toLowerCase().contains('macbook') == true)
       return Icons.laptop_mac;
-    }
+    if (device.name?.toLowerCase().contains('iphone') == true)
+      return Icons.phone_iphone;
     if (device.name?.toLowerCase().contains('tv') == true) return Icons.tv;
-    return Icons.computer;
+    if (device.name?.toLowerCase().contains('gaming') == true)
+      return Icons.sports_esports;
+    if (device.name?.toLowerCase().contains('printer') == true)
+      return Icons.print;
+    return Icons.devices;
   }
 
   String _getDeviceName(ScannedDevice device) {
     if (device.isGateway) return 'Home Router';
     if (device.isSelf) return 'This Device';
-    if (device.name?.toLowerCase().contains('iphone') == true) {
-      return 'iPhone 14 Pro';
-    }
-    if (device.name?.toLowerCase().contains('macbook') == true) {
-      return 'MacBook Pro';
-    }
-    if (device.name?.toLowerCase().contains('tv') == true) return 'Smart TV';
     return device.displayName;
   }
 
-  String _getDeviceManufacturer(ScannedDevice device) {
-    if (device.isGateway) return 'TP-Link';
-    if (device.name?.toLowerCase().contains('iphone') == true) {
-      return 'Apple Inc.';
-    }
-    if (device.name?.toLowerCase().contains('macbook') == true) {
-      return 'Apple Inc.';
-    }
-    if (device.name?.toLowerCase().contains('tv') == true) return 'Samsung';
-    return 'Intel Corporation';
-  }
-
   String _getConnectionType(ScannedDevice device) {
-    if (device.isGateway) return 'LAN';
-    return 'Wi-Fi';
-  }
-
-  Color _getConnectionTypeColor(ScannedDevice device) {
-    final theme = Theme.of(context);
-    return theme.brightness == Brightness.dark
-        ? const Color(0xFF0F3460) // Dark blue for dark theme
-        : const Color(0xFFDCFCE7); // Light green for light theme
+    if (device.isGateway) return '5GHz';
+    if (device.name?.toLowerCase().contains('gaming') == true) return 'Gigabit';
+    if (device.name?.toLowerCase().contains('iphone') == true) return 'WiFi 6';
+    return 'WiFi';
   }
 
   Future<void> _shareNetworkSummary(List<ScannedDevice> devices) async {
@@ -701,14 +616,14 @@ class _DevicesScreenState extends State<DevicesScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Row(
+            content: const Row(
               children: [
-                const Icon(Icons.check_circle, color: Colors.white, size: 20),
-                const SizedBox(width: 12),
+                Icon(Icons.check_circle, color: Colors.white, size: 20),
+                SizedBox(width: 12),
                 Text('Network summary shared successfully!'),
               ],
             ),
-            backgroundColor: const Color(0xFF10B981),
+            backgroundColor: const Color(0xFF30A46C),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
@@ -721,7 +636,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to share: ${e.toString()}'),
-            backgroundColor: const Color(0xFFEF4444),
+            backgroundColor: const Color(0xFFFF3B30),
           ),
         );
       }
