@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:netra/common/appconstants/app_colors.dart';
-import 'package:netra/models/network_model/open_port.dart';
 import 'package:netra/models/network_model/scanned_device.dart';
+import 'package:netra/models/network_model/open_port.dart';
 import 'package:netra/service/port_scanner_service/port_scanner_service.dart';
+import 'package:netra/service/share_service/share_service.dart';
 
 class DeviceDetailsScreen extends StatefulWidget {
   final ScannedDevice device;
@@ -15,6 +15,7 @@ class DeviceDetailsScreen extends StatefulWidget {
 
 class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
   final PortScannerService _portScanner = PortScannerService();
+  final ShareService _shareService = ShareService();
   List<OpenPort> _openPorts = [];
   bool _isScanning = false;
   String _scanType = 'Common Ports';
@@ -84,7 +85,27 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                       ),
                     ),
                     const Spacer(),
-                    const SizedBox(width: 80),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        GestureDetector(
+                          onTap: _shareDeviceInfo,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.share,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -308,7 +329,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
         const SizedBox(height: 32),
         Row(
           children: [
-            Icon(Icons.security, color: AppColors.iconPrimary, size: 20),
+            Icon(Icons.security, color: const Color(0xFF10B981), size: 20),
             const SizedBox(width: 12),
             Text(
               'Port Scanner',
@@ -319,6 +340,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
               ),
             ),
             const Spacer(),
+            // Help/Reference button
             GestureDetector(
               onTap: _showPortReferenceDialog,
               child: Container(
@@ -391,7 +413,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                 child: ElevatedButton(
                   onPressed: _isScanning ? null : _startPortScan,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.buttonPrimary,
+                    backgroundColor: const Color(0xFF10B981),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -441,7 +463,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary
+              ? const Color(0xFF10B981)
               : (theme.brightness == Brightness.dark
                     ? const Color(0xFF1E293B)
                     : const Color(0xFFF9FAFB)),
@@ -1009,6 +1031,58 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
       PortInfo(445, 'SMB', 'Server Message Block - file sharing', 'High'),
       PortInfo(1723, 'PPTP', 'Point-to-Point Tunneling Protocol', 'High'),
     ];
+  }
+
+  Future<void> _shareDeviceInfo() async {
+    try {
+      // If we have port scan results, share the complete security report
+      // Otherwise, share basic device information
+      if (_lastScanResult != null) {
+        await _shareService.shareDeviceWithPorts(
+          widget.device,
+          _lastScanResult,
+        );
+        _showShareSuccessMessage('Security report shared successfully!');
+      } else {
+        await _shareService.shareDeviceInfo(widget.device);
+        _showShareSuccessMessage('Device information shared successfully!');
+      }
+    } catch (e) {
+      _showShareErrorMessage('Failed to share: ${e.toString()}');
+    }
+  }
+
+  void _showShareSuccessMessage(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white, size: 20),
+              const SizedBox(width: 12),
+              Text(message),
+            ],
+          ),
+          backgroundColor: const Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    }
+  }
+
+  void _showShareErrorMessage(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: const Color(0xFFEF4444),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
   }
 }
 

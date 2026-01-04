@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:netra/models/network_model/scanned_device.dart';
 import 'package:netra/view/device_details_screen/device_details_screen.dart';
 import 'package:netra/viewmodels/scanner_viewmodel/scanner_viewmodel.dart';
+import 'package:netra/service/share_service/share_service.dart';
 import 'package:provider/provider.dart';
 
 class DevicesScreen extends StatefulWidget {
@@ -13,6 +14,7 @@ class DevicesScreen extends StatefulWidget {
 
 class _DevicesScreenState extends State<DevicesScreen> {
   String _selectedFilter = 'All';
+  final ShareService _shareService = ShareService();
 
   @override
   void initState() {
@@ -80,38 +82,99 @@ class _DevicesScreenState extends State<DevicesScreen> {
                   ),
                   Consumer<NetworkScannerProvider>(
                     builder: (context, provider, _) {
-                      return GestureDetector(
-                        onTap: () async {
-                          if (provider.state != ScanState.scanning) {
-                            // Use Future.microtask to prevent UI blocking
-                            Future.microtask(() => provider.startScan());
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).cardColor,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.05),
-                                blurRadius: 10,
-                                offset: const Offset(0, 2),
+                      return Row(
+                        children: [
+                          // Share button
+                          GestureDetector(
+                            onTap: provider.devices.isNotEmpty
+                                ? () => _shareNetworkSummary(provider.devices)
+                                : null,
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).cardColor,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(
+                                      alpha:
+                                          Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? 0.2
+                                          : 0.05,
+                                    ),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                               ),
-                            ],
+                              child: Icon(
+                                Icons.share,
+                                color: provider.devices.isNotEmpty
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.color
+                                          ?.withValues(alpha: 0.3),
+                                size: 20,
+                              ),
+                            ),
                           ),
-                          child: provider.state == ScanState.scanning
-                              ? SizedBox()
-                              : Icon(
-                                  Icons.refresh,
-                                  color: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium
-                                      ?.color
-                                      ?.withValues(alpha: 0.7),
-                                  size: 20,
-                                ),
-                        ),
+                          const SizedBox(width: 12),
+                          // Refresh button
+                          GestureDetector(
+                            onTap: () async {
+                              if (provider.state != ScanState.scanning) {
+                                // Use Future.microtask to prevent UI blocking
+                                Future.microtask(() => provider.startScan());
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).cardColor,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(
+                                      alpha:
+                                          Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? 0.2
+                                          : 0.05,
+                                    ),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: provider.state == ScanState.scanning
+                                  ? SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Theme.of(
+                                                context,
+                                              ).colorScheme.primary,
+                                            ),
+                                      ),
+                                    )
+                                  : Icon(
+                                      Icons.refresh,
+                                      color: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.color
+                                          ?.withValues(alpha: 0.7),
+                                      size: 20,
+                                    ),
+                            ),
+                          ),
+                        ],
                       );
                     },
                   ),
@@ -629,5 +692,39 @@ class _DevicesScreenState extends State<DevicesScreen> {
     return theme.brightness == Brightness.dark
         ? const Color(0xFF0F3460) // Dark blue for dark theme
         : const Color(0xFFDCFCE7); // Light green for light theme
+  }
+
+  Future<void> _shareNetworkSummary(List<ScannedDevice> devices) async {
+    try {
+      await _shareService.shareNetworkSummary(devices, null);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                const SizedBox(width: 12),
+                Text('Network summary shared successfully!'),
+              ],
+            ),
+            backgroundColor: const Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to share: ${e.toString()}'),
+            backgroundColor: const Color(0xFFEF4444),
+          ),
+        );
+      }
+    }
   }
 }
