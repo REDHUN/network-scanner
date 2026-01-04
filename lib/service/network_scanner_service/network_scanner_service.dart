@@ -4,10 +4,9 @@ import 'package:netra/models/network_model/scanned_device.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:network_tools/network_tools.dart';
 
-
 class NetworkScannerService {
   static final NetworkScannerService _instance =
-  NetworkScannerService._internal();
+      NetworkScannerService._internal();
   factory NetworkScannerService() => _instance;
   NetworkScannerService._internal();
 
@@ -29,8 +28,7 @@ class NetworkScannerService {
     if (net == null) throw Exception('No Wi-Fi connection');
 
     /// Phase 1: Ping discovery (MOST IMPORTANT)
-    final pingStream =
-    HostScannerService.instance.getAllPingableDevices(
+    final pingStream = HostScannerService.instance.getAllPingableDevices(
       net.subnet,
       firstHostId: settings.firstHost,
       lastHostId: settings.lastHost,
@@ -42,8 +40,7 @@ class NetworkScannerService {
     }
 
     /// Phase 2: mDNS discovery
-    final mdnsHosts =
-    await MdnsScannerService.instance.searchMdnsDevices();
+    final mdnsHosts = await MdnsScannerService.instance.searchMdnsDevices();
 
     for (final host in mdnsHosts) {
       yield await _mapHost(host, net);
@@ -51,24 +48,56 @@ class NetworkScannerService {
   }
 
   /// Convert ActiveHost → ScannedDevice
-  Future<ScannedDevice> _mapHost(
-      ActiveHost host,
-      _NetInfo net,
-      ) async {
+  Future<ScannedDevice> _mapHost(ActiveHost host, _NetInfo net) async {
     final ip = host.internetAddress.address;
 
+    try {
+      // Get device info with timeouts, but handle each separately to avoid type issues
+      String? macAddress;
+      String? deviceName;
+      String? mdnsName;
 
+      try {
+        final arpData = await host.arpData.timeout(const Duration(seconds: 2));
+        macAddress = arpData?.macAddress;
+      } catch (_) {
+        macAddress = null;
+      }
 
+      try {
+        deviceName = await host.deviceName.timeout(const Duration(seconds: 2));
+      } catch (_) {
+        deviceName = 'Unknown Device';
+      }
 
-    return ScannedDevice(
+      try {
+        final mdnsInfo = await host.mdnsInfo.timeout(
+          const Duration(seconds: 2),
+        );
+        mdnsName = mdnsInfo?.mdnsName;
+      } catch (_) {
+        mdnsName = null;
+      }
 
-      ip: ip,
-      mac: (await host.arpData)?.macAddress,
-      name: await host.deviceName,
-      mdns: (await host.mdnsInfo)?.mdnsName,
-      isSelf: ip == net.ip,
-      isGateway: ip == net.gateway,
-    );
+      return ScannedDevice(
+        ip: ip,
+        mac: macAddress,
+        name: deviceName,
+        mdns: mdnsName,
+        isSelf: ip == net.ip,
+        isGateway: ip == net.gateway,
+      );
+    } catch (e) {
+      // Fallback for any errors during device info gathering
+      return ScannedDevice(
+        ip: ip,
+        mac: null,
+        name: 'Unknown Device',
+        mdns: null,
+        isSelf: ip == net.ip,
+        isGateway: ip == net.gateway,
+      );
+    }
   }
 }
 
