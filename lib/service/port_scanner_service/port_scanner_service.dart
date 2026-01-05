@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:netra/models/network_model/open_port.dart';
+import 'package:jaal/models/network_model/open_port.dart';
 
 class PortScannerService {
   static final PortScannerService _instance = PortScannerService._internal();

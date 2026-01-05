@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:netra/core/loadstate/load_state.dart';
-import 'package:netra/view/devices_screen/devices_screen.dart';
-import 'package:netra/viewmodels/network_viewmodel/network_viewmodel.dart';
+import 'package:jaal/common/widgets/app_icon.dart';
+import 'package:jaal/core/loadstate/load_state.dart';
+import 'package:jaal/view/devices_screen/devices_screen.dart';
+import 'package:jaal/viewmodels/network_viewmodel/network_viewmodel.dart';
 import 'package:provider/provider.dart';
 
 class Homescreen extends StatefulWidget {
@@ -47,7 +48,11 @@ class _HomescreenState extends State<Homescreen> {
               color: const Color(0xFFD4A574),
               borderRadius: BorderRadius.circular(6),
             ),
-            child: const Icon(Icons.radar, color: Color(0xFF2C2C2E), size: 16),
+            child: const AppIcon(
+              size: 16,
+              showStatusIndicator: false,
+              backgroundColor: Colors.black,
+            ),
           ),
           label: const Text(
             'START SCAN',
@@ -85,7 +90,7 @@ class _HomescreenState extends State<Homescreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Network Utility',
+                          'Jaal : Network Scanner',
                           style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.w700,
@@ -111,11 +116,7 @@ class _HomescreenState extends State<Homescreen> {
                         ),
                       ],
                     ),
-                    child: Icon(
-                      Icons.settings,
-                      color: Theme.of(context).textTheme.headlineLarge?.color,
-                      size: 20,
-                    ),
+                    child: const AppIcon(size: 20, showStatusIndicator: false),
                   ),
                 ],
               ),
@@ -249,28 +250,27 @@ class _HomescreenState extends State<Homescreen> {
                         const SizedBox(height: 32),
 
                         // Signal and Ping Stats
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildStatCard(
-                                'SIGNAL',
-                                '-45',
-                                'dBm',
-                                Colors.white70,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: _buildStatCard(
-                                'PING',
-                                '12',
-                                'ms',
-                                const Color(0xFFD4A574),
-                              ),
-                            ),
-                          ],
-                        ),
-
+                        // Row(
+                        //   children: [
+                        //     Expanded(
+                        //       child: _buildStatCard(
+                        //         'SIGNAL',
+                        //         '-45',
+                        //         'dBm',
+                        //         Colors.white70,
+                        //       ),
+                        //     ),
+                        //     const SizedBox(width: 16),
+                        //     Expanded(
+                        //       child: _buildStatCard(
+                        //         'PING',
+                        //         '12',
+                        //         'ms',
+                        //         const Color(0xFFD4A574),
+                        //       ),
+                        //     ),
+                        //   ],
+                        // ),
                         const SizedBox(height: 32),
 
                         // Signal Strength Bars

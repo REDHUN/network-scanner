@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:netra/viewmodels/theme_viewmodel/theme_viewmodel.dart';
+import 'package:jaal/common/widgets/app_icon.dart';
+import 'package:jaal/viewmodels/theme_viewmodel/theme_viewmodel.dart';
 import 'package:provider/provider.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -23,39 +24,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
               // Header
               Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).cardTheme.color,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        Icons.arrow_back,
+                  // App Icon
+                  const AppIcon(size: 44, showStatusIndicator: false),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      'Settings',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
                         color: Theme.of(context).textTheme.headlineLarge?.color,
-                        size: 20,
                       ),
                     ),
                   ),
-                  const Spacer(),
-                  Text(
-                    'Settings',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: Theme.of(context).textTheme.headlineLarge?.color,
-                    ),
-                  ),
-                  const Spacer(),
-                  const SizedBox(width: 44), // Balance the back button
                 ],
               ),
               const SizedBox(height: 32),
@@ -109,7 +90,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               // Version info
               Center(
                 child: Text(
-                  'Network Monitor v2.1.0 (Build 405)',
+                  'Jaal : Network Scanner v1.0.0 (Build 1)',
                   style: TextStyle(
                     fontSize: 12,
                     color: Theme.of(
@@ -169,6 +150,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 20),
               Row(
                 children: [
+                  // System Theme
+                  Expanded(
+                    child: _buildThemeOption(
+                      'System',
+                      AppThemeMode.system,
+                      themeVM,
+                      _buildSystemThemePreview(),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
                   // Light Theme
                   Expanded(
                     child: _buildThemeOption(

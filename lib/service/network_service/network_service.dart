@@ -1,6 +1,5 @@
-import 'package:netra/models/network_model/network_info_model.dart';
+import 'package:jaal/models/network_model/network_info_model.dart';
 import 'package:network_info_plus/network_info_plus.dart';
-
 
 class NetworkService {
   final NetworkInfo _networkInfo = NetworkInfo();
@@ -10,7 +9,6 @@ class NetworkService {
     final wifiIP = await _networkInfo.getWifiIP();
     final subnet = await _networkInfo.getWifiSubmask();
     final gateway = await _networkInfo.getWifiGatewayIP();
-
 
     return NetworkInfoModel(
       wifiName: wifiName,

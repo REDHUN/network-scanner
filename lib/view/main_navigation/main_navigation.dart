@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:netra/view/devices_screen/devices_screen.dart';
-import 'package:netra/view/homescreen/homescreen.dart';
-import 'package:netra/view/settings_screen/settings_screen.dart';
-import 'package:netra/viewmodels/scanner_viewmodel/scanner_viewmodel.dart';
+import 'package:jaal/view/devices_screen/devices_screen.dart';
+import 'package:jaal/view/homescreen/homescreen.dart';
+import 'package:jaal/view/settings_screen/settings_screen.dart';
+import 'package:jaal/viewmodels/scanner_viewmodel/scanner_viewmodel.dart';
 import 'package:provider/provider.dart';
 
 class MainNavigation extends StatefulWidget {

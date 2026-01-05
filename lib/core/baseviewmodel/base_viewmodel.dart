@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:netra/core/loadstate/load_state.dart';
+import 'package:jaal/core/loadstate/load_state.dart';
 
 abstract class BaseViewModel extends ChangeNotifier {
   LoadState _state = LoadState.idle;

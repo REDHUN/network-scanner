@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:netra/viewmodels/scanner_viewmodel/scanner_viewmodel.dart';
+import 'package:jaal/viewmodels/scanner_viewmodel/scanner_viewmodel.dart';
 import 'package:provider/provider.dart';
 
 class ScannerScreen extends StatelessWidget {
@@ -13,10 +13,7 @@ class ScannerScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Network Scan'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: vm.startScan,
-          )
+          IconButton(icon: const Icon(Icons.refresh), onPressed: vm.startScan),
         ],
       ),
       body: ListView.builder(

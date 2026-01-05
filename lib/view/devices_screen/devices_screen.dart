@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:netra/models/network_model/scanned_device.dart';
-import 'package:netra/service/share_service/share_service.dart';
-import 'package:netra/view/device_details_screen/device_details_screen.dart';
-import 'package:netra/viewmodels/scanner_viewmodel/scanner_viewmodel.dart';
+import 'package:jaal/models/network_model/scanned_device.dart';
+import 'package:jaal/models/storage/router_network_data.dart';
+import 'package:jaal/service/share_service/share_service.dart';
+import 'package:jaal/view/device_details_screen/device_details_screen.dart';
+import 'package:jaal/view/router_history_screen/router_history_screen.dart';
+import 'package:jaal/viewmodels/network_viewmodel/network_viewmodel.dart';
+import 'package:jaal/viewmodels/scanner_viewmodel/scanner_viewmodel.dart';
 import 'package:provider/provider.dart';
 
 class DevicesScreen extends StatefulWidget {
@@ -19,20 +22,29 @@ class _DevicesScreenState extends State<DevicesScreen> {
   @override
   void initState() {
     super.initState();
-    initFunction();
+    _initializeScanner();
   }
 
-  void initFunction() {
-    final networkScannerProvider = context.read<NetworkScannerProvider>();
+  void _initializeScanner() async {
+    final networkVM = context.read<NetworkViewModel>();
+    final scannerVM = context.read<NetworkScannerProvider>();
 
-    // Delay the scan start to allow navigation to complete smoothly
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted) {
-          networkScannerProvider.startScan();
-        }
+    // Initialize scanner with current network info
+    if (networkVM.networkInfo != null) {
+      await scannerVM.initializeWithNetworkInfo(networkVM.networkInfo!);
+    }
+
+    // Start scan after initialization
+    if (scannerVM.isFirstApiCall) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            scannerVM.startScan();
+            scannerVM.isFirstApiCall = false;
+          }
+        });
       });
-    });
+    }
   }
 
   @override
@@ -47,18 +59,6 @@ class _DevicesScreenState extends State<DevicesScreen> {
               padding: const EdgeInsets.all(24.0),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      child: Icon(
-                        Icons.arrow_back,
-                        color: Theme.of(context).textTheme.headlineLarge?.color,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                  const Spacer(),
                   Text(
                     'Devices',
                     style: TextStyle(
@@ -81,19 +81,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               child: provider.state == ScanState.scanning
-                                  ? SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                              Theme.of(
-                                                context,
-                                              ).colorScheme.primary,
-                                            ),
-                                      ),
-                                    )
+                                  ? SizedBox()
                                   : Icon(
                                       Icons.refresh,
                                       color: Theme.of(
@@ -106,14 +94,55 @@ class _DevicesScreenState extends State<DevicesScreen> {
                         },
                       ),
                       const SizedBox(width: 8),
+                      Consumer<NetworkScannerProvider>(
+                        builder: (context, provider, _) {
+                          return GestureDetector(
+                            onTap: provider.devices.isNotEmpty
+                                ? () => _shareNetworkSummary(provider.devices)
+                                : null,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: provider.devices.isNotEmpty
+                                  ? BoxDecoration(
+                                      color: const Color(
+                                        0xFFD4A574,
+                                      ).withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                    )
+                                  : null,
+                              child: Icon(
+                                Icons.share,
+                                color: provider.devices.isNotEmpty
+                                    ? const Color(0xFFD4A574)
+                                    : Theme.of(context)
+                                          .textTheme
+                                          .headlineLarge
+                                          ?.color
+                                          ?.withValues(alpha: 0.3),
+                                size: 24,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(width: 8),
                       GestureDetector(
                         onTap: () {
-                          // Settings or filter action
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const RouterHistoryScreen(),
+                            ),
+                          );
                         },
                         child: Container(
                           padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).cardTheme.color,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                           child: Icon(
-                            Icons.settings,
+                            Icons.history,
                             color: Theme.of(
                               context,
                             ).textTheme.headlineLarge?.color,
@@ -208,10 +237,22 @@ class _DevicesScreenState extends State<DevicesScreen> {
   }
 
   Widget _buildDevicesList(NetworkScannerProvider provider) {
-    final devices = provider.devices;
-    final onlineDevices =
-        devices.length; // Assume all scanned devices are online
-    final offlineDevices = 0; // For demo purposes
+    final onlineDevices = provider.getOnlineDevices();
+    final offlineDevices = provider.getOfflineDevices();
+    final allDevices = provider.getAllDevicesWithStatus();
+
+    // Filter devices based on selected filter
+    List<StoredDevice> filteredDevices;
+    switch (_selectedFilter) {
+      case 'Online':
+        filteredDevices = allDevices.where((d) => d.isOnline).toList();
+        break;
+      case 'Offline':
+        filteredDevices = allDevices.where((d) => !d.isOnline).toList();
+        break;
+      default:
+        filteredDevices = allDevices;
+    }
 
     return Column(
       children: [
@@ -221,7 +262,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
             Expanded(
               child: _buildStatCard(
                 title: 'Online',
-                count: onlineDevices,
+                count: onlineDevices.length,
                 subtitle: 'Devices active',
                 isOnline: true,
               ),
@@ -230,7 +271,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
             Expanded(
               child: _buildStatCard(
                 title: 'Offline',
-                count: offlineDevices,
+                count: offlineDevices.length,
                 subtitle: 'Last 24 hours',
                 isOnline: false,
               ),
@@ -243,21 +284,55 @@ class _DevicesScreenState extends State<DevicesScreen> {
         // Filter Tabs
         Row(
           children: [
-            _buildFilterTab('All', devices.length),
+            _buildFilterTab('All', allDevices.length),
             const SizedBox(width: 12),
-            _buildFilterTab('Online', onlineDevices),
+            _buildFilterTab('Online', onlineDevices.length),
             const SizedBox(width: 12),
-            _buildFilterTab('Offline', offlineDevices),
+            _buildFilterTab('Offline', offlineDevices.length),
           ],
         ),
 
         const SizedBox(height: 24),
 
+        // Router Change Notification
+        if (provider.hasRouterChanged)
+          Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFD4A574).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFFD4A574).withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.wifi, color: const Color(0xFFD4A574), size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Connected to different network. Loading stored data...',
+                    style: TextStyle(
+                      color: const Color(0xFFD4A574),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
         // Section Header
         Row(
           children: [
             Text(
-              'CONNECTED DEVICES',
+              _selectedFilter == 'All'
+                  ? 'ALL DEVICES'
+                  : _selectedFilter == 'Online'
+                  ? 'ONLINE DEVICES'
+                  : 'OFFLINE DEVICES',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -283,15 +358,15 @@ class _DevicesScreenState extends State<DevicesScreen> {
 
         // Device List
         Expanded(
-          child: devices.isEmpty
+          child: filteredDevices.isEmpty
               ? _buildEmptyState()
               : ListView.builder(
-                  itemCount: devices.length,
+                  itemCount: filteredDevices.length,
                   itemBuilder: (context, index) {
-                    final device = devices[index];
+                    final device = filteredDevices[index];
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: _buildDeviceCard(device),
+                      child: _buildStoredDeviceCard(device),
                     );
                   },
                 ),
@@ -406,28 +481,39 @@ class _DevicesScreenState extends State<DevicesScreen> {
     );
   }
 
-  Widget _buildDeviceCard(ScannedDevice device) {
-    final isOnline = true; // Assume all scanned devices are online
-
+  Widget _buildStoredDeviceCard(StoredDevice device) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => DeviceDetailsScreen(device: device),
+            builder: (context) =>
+                DeviceDetailsScreen(device: device.toScannedDevice()),
           ),
         );
       },
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: isOnline
+          color: device.isOnline
               ? const Color(0xFF2C2C2E)
-              : Theme.of(context).cardTheme.color?.withValues(alpha: 0.5),
+              : Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(20),
+          border: device.isOnline
+              ? null
+              : Border.all(
+                  color:
+                      Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.color?.withValues(alpha: 0.2) ??
+                      Colors.grey.withValues(alpha: 0.2),
+                  width: 1,
+                ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
+              color: Colors.black.withValues(
+                alpha: device.isOnline ? 0.1 : 0.05,
+              ),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -439,7 +525,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isOnline
+                color: device.isOnline
                     ? Colors.white.withValues(alpha: 0.1)
                     : Theme.of(
                         context,
@@ -447,8 +533,8 @@ class _DevicesScreenState extends State<DevicesScreen> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
-                _getDeviceIcon(device),
-                color: isOnline
+                _getStoredDeviceIcon(device),
+                color: device.isOnline
                     ? Colors.white
                     : Theme.of(
                         context,
@@ -464,16 +550,45 @@ class _DevicesScreenState extends State<DevicesScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    _getDeviceName(device),
-                    style: TextStyle(
-                      color: isOnline
-                          ? Colors.white
-                          : Theme.of(context).textTheme.headlineLarge?.color
-                                ?.withValues(alpha: 0.7),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _getStoredDeviceName(device),
+                          style: TextStyle(
+                            color: device.isOnline
+                                ? Colors.white
+                                : Theme.of(context)
+                                      .textTheme
+                                      .headlineLarge
+                                      ?.color
+                                      ?.withValues(alpha: 0.7),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      if (!device.isOnline)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'OFFLINE',
+                            style: TextStyle(
+                              color: Colors.orange,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 4),
                   Row(
@@ -481,7 +596,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
                       Text(
                         device.ip,
                         style: TextStyle(
-                          color: isOnline
+                          color: device.isOnline
                               ? Colors.white70
                               : Theme.of(context).textTheme.bodyMedium?.color
                                     ?.withValues(alpha: 0.5),
@@ -494,12 +609,142 @@ class _DevicesScreenState extends State<DevicesScreen> {
                         style: TextStyle(color: Colors.white70),
                       ),
                       Text(
-                        _getConnectionType(device),
+                        _getStoredConnectionType(device),
                         style: TextStyle(
-                          color: isOnline
+                          color: device.isOnline
                               ? Colors.white70
                               : Theme.of(context).textTheme.bodyMedium?.color
                                     ?.withValues(alpha: 0.5),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (!device.isOnline)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        'Last seen: ${_formatLastSeen(device.lastSeen)}',
+                        style: TextStyle(
+                          color: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.color?.withValues(alpha: 0.4),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+
+            // Status Indicators
+            Column(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: device.isOnline
+                        ? const Color(0xFFD4A574)
+                        : Colors.orange,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Icon(
+                  device.isOnline ? Icons.wifi : Icons.wifi_off,
+                  color: device.isOnline
+                      ? Colors.white70
+                      : Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.color?.withValues(alpha: 0.3),
+                  size: 16,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDeviceCard(ScannedDevice device) {
+    final isOnline = true; // Assume all scanned devices are online
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DeviceDetailsScreen(device: device),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF2C2C2E),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Device Icon
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                _getDeviceIcon(device),
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+
+            const SizedBox(width: 16),
+
+            // Device Info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _getDeviceName(device),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Text(
+                        device.ip,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                      const Text(
+                        ' • ',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                      Text(
+                        _getConnectionType(device),
+                        style: const TextStyle(
+                          color: Colors.white70,
                           fontSize: 14,
                           fontWeight: FontWeight.w400,
                         ),
@@ -516,25 +761,13 @@ class _DevicesScreenState extends State<DevicesScreen> {
                 Container(
                   width: 8,
                   height: 8,
-                  decoration: BoxDecoration(
-                    color: isOnline
-                        ? const Color(0xFFD4A574)
-                        : Theme.of(
-                            context,
-                          ).textTheme.bodyMedium?.color?.withValues(alpha: 0.3),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFD4A574),
                     shape: BoxShape.circle,
                   ),
                 ),
                 const SizedBox(height: 8),
-                Icon(
-                  isOnline ? Icons.wifi : Icons.wifi_off,
-                  color: isOnline
-                      ? Colors.white70
-                      : Theme.of(
-                          context,
-                        ).textTheme.bodyMedium?.color?.withValues(alpha: 0.3),
-                  size: 16,
-                ),
+                const Icon(Icons.wifi, color: Colors.white70, size: 16),
               ],
             ),
           ],
@@ -581,7 +814,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
     );
   }
 
-  IconData _getDeviceIcon(ScannedDevice device) {
+  IconData _getStoredDeviceIcon(StoredDevice device) {
     if (device.isGateway) return Icons.router;
     if (device.isSelf) return Icons.smartphone;
     if (device.name?.toLowerCase().contains('macbook') == true)
@@ -593,6 +826,55 @@ class _DevicesScreenState extends State<DevicesScreen> {
       return Icons.sports_esports;
     if (device.name?.toLowerCase().contains('printer') == true)
       return Icons.print;
+    return Icons.devices;
+  }
+
+  String _getStoredDeviceName(StoredDevice device) {
+    if (device.isGateway) return 'Home Router';
+    if (device.isSelf) return 'This Device';
+    if (device.mdns != null) return device.mdns!;
+    if (device.name != null) return device.name!;
+    return 'Unknown Device';
+  }
+
+  String _getStoredConnectionType(StoredDevice device) {
+    if (device.isGateway) return '5GHz';
+    if (device.name?.toLowerCase().contains('gaming') == true) return 'Gigabit';
+    if (device.name?.toLowerCase().contains('iphone') == true) return 'WiFi 6';
+    return 'WiFi';
+  }
+
+  String _formatLastSeen(DateTime lastSeen) {
+    final now = DateTime.now();
+    final difference = now.difference(lastSeen);
+
+    if (difference.inMinutes < 1) {
+      return 'Just now';
+    } else if (difference.inHours < 1) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inDays < 1) {
+      return '${difference.inHours}h ago';
+    } else {
+      return '${difference.inDays}d ago';
+    }
+  }
+
+  IconData _getDeviceIcon(ScannedDevice device) {
+    if (device.isGateway) return Icons.router;
+    if (device.isSelf) return Icons.smartphone;
+    if (device.name?.toLowerCase().contains('macbook') == true) {
+      return Icons.laptop_mac;
+    }
+    if (device.name?.toLowerCase().contains('iphone') == true) {
+      return Icons.phone_iphone;
+    }
+    if (device.name?.toLowerCase().contains('tv') == true) return Icons.tv;
+    if (device.name?.toLowerCase().contains('gaming') == true) {
+      return Icons.sports_esports;
+    }
+    if (device.name?.toLowerCase().contains('printer') == true) {
+      return Icons.print;
+    }
     return Icons.devices;
   }
 
