@@ -1,8 +1,8 @@
 import 'dart:developer';
 
-import 'package:jaal/models/network_model/network_info_model.dart';
-import 'package:jaal/models/network_model/scanned_device.dart';
-import 'package:jaal/service/device_storage_service/device_storage_service.dart';
+import 'package:ip_tools/models/network_model/network_info_model.dart';
+import 'package:ip_tools/models/network_model/scanned_device.dart';
+import 'package:ip_tools/service/device_storage_service/device_storage_service.dart';
 
 /// Simple test utility to verify device storage functionality
 class StorageTest {
@@ -23,20 +23,9 @@ class StorageTest {
 
       // Test 2: Create mock devices
       final devices = [
-        const ScannedDevice(
-          ip: '192.168.1.1',
-          name: 'Router',
-          isGateway: true,
-        ),
-        const ScannedDevice(
-          ip: '192.168.1.100',
-          name: 'iPhone',
-          isSelf: true,
-        ),
-        const ScannedDevice(
-          ip: '192.168.1.101',
-          name: 'MacBook',
-        ),
+        const ScannedDevice(ip: '192.168.1.1', name: 'Router', isGateway: true),
+        const ScannedDevice(ip: '192.168.1.100', name: 'iPhone', isSelf: true),
+        const ScannedDevice(ip: '192.168.1.101', name: 'MacBook'),
       ];
 
       // Test 3: Save initial data
@@ -49,16 +38,8 @@ class StorageTest {
 
       // Test 5: Simulate second scan with one device missing
       final secondScanDevices = [
-        const ScannedDevice(
-          ip: '192.168.1.1',
-          name: 'Router',
-          isGateway: true,
-        ),
-        const ScannedDevice(
-          ip: '192.168.1.100',
-          name: 'iPhone',
-          isSelf: true,
-        ),
+        const ScannedDevice(ip: '192.168.1.1', name: 'Router', isGateway: true),
+        const ScannedDevice(ip: '192.168.1.100', name: 'iPhone', isSelf: true),
         // MacBook is missing (offline)
       ];
 
@@ -102,7 +83,7 @@ class StorageTest {
         final routerToDelete = allRouters.first.routerId;
         log('🗑️ Testing deletion of router: $routerToDelete');
         await _storageService.deleteRouterData(routerToDelete);
-        
+
         final remainingRouters = await _storageService.getAllRouterNetworks();
         log('✅ Remaining routers after deletion: ${remainingRouters.length}');
       }

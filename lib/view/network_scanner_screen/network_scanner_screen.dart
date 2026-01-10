@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:jaal/viewmodels/scanner_viewmodel/scanner_viewmodel.dart';
+import 'package:ip_tools/viewmodels/scanner_viewmodel/scanner_viewmodel.dart';
 import 'package:provider/provider.dart';
 
 class ScannerScreen extends StatelessWidget {

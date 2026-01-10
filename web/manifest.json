@@ -1,6 +1,6 @@
 {
-    "name": "Jaal : Network Scanner",
-    "short_name": "Jaal",
+    "name": "IP Tools : Network Scanner",
+    "short_name": "IP Tools",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#2C2C2E",

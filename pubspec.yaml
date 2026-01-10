@@ -1,5 +1,5 @@
-name: jaal
-description: "Jaal : Network Scanner - A comprehensive network analysis and device discovery tool."
+name: ip_tools
+description: "IP Tools : Network Scanner - A comprehensive network analysis and device discovery tool."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev

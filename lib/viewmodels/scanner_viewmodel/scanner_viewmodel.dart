@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:jaal/models/network_model/network_info_model.dart';
-import 'package:jaal/models/network_model/scan_settings.dart';
-import 'package:jaal/models/network_model/scanned_device.dart';
-import 'package:jaal/models/storage/router_network_data.dart';
-import 'package:jaal/service/device_storage_service/device_storage_service.dart';
-import 'package:jaal/service/network_scanner_service/network_scanner_service.dart';
+import 'package:ip_tools/models/network_model/network_info_model.dart';
+import 'package:ip_tools/models/network_model/scan_settings.dart';
+import 'package:ip_tools/models/network_model/scanned_device.dart';
+import 'package:ip_tools/models/storage/router_network_data.dart';
+import 'package:ip_tools/service/device_storage_service/device_storage_service.dart';
+import 'package:ip_tools/service/network_scanner_service/network_scanner_service.dart';
 
 enum ScanState { idle, scanning, done, error }
 
@@ -188,7 +188,7 @@ class NetworkScannerProvider extends ChangeNotifier {
         // Load devices from the selected router
         devices.clear();
         offlineDevices.clear();
-        
+
         // Separate online and offline devices
         for (final device in routerData.devices) {
           if (device.isOnline) {
@@ -197,7 +197,7 @@ class NetworkScannerProvider extends ChangeNotifier {
             offlineDevices.add(device);
           }
         }
-        
+
         notifyListeners();
       }
     } catch (e) {
@@ -214,7 +214,7 @@ class NetworkScannerProvider extends ChangeNotifier {
   Future<void> deleteRouterData(String routerId) async {
     try {
       await _storageService.deleteRouterData(routerId);
-      
+
       // If we deleted the current router, clear current devices
       final currentRouterId = await _storageService.getCurrentRouterId();
       if (currentRouterId == null || currentRouterId == routerId) {

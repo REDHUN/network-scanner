@@ -1,4 +1,4 @@
-import 'package:jaal/models/network_model/scanned_device.dart';
+import 'package:ip_tools/models/network_model/scanned_device.dart';
 
 class RouterNetworkData {
   final String routerId; // Combination of gateway IP + WiFi name

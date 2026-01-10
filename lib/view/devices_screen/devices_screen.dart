@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:jaal/models/network_model/scanned_device.dart';
-import 'package:jaal/models/storage/router_network_data.dart';
-import 'package:jaal/service/share_service/share_service.dart';
-import 'package:jaal/view/device_details_screen/device_details_screen.dart';
-import 'package:jaal/view/router_history_screen/router_history_screen.dart';
-import 'package:jaal/viewmodels/network_viewmodel/network_viewmodel.dart';
-import 'package:jaal/viewmodels/scanner_viewmodel/scanner_viewmodel.dart';
+import 'package:ip_tools/models/network_model/scanned_device.dart';
+import 'package:ip_tools/models/storage/router_network_data.dart';
+import 'package:ip_tools/service/share_service/share_service.dart';
+import 'package:ip_tools/view/device_details_screen/device_details_screen.dart';
+import 'package:ip_tools/view/router_history_screen/router_history_screen.dart';
+import 'package:ip_tools/viewmodels/network_viewmodel/network_viewmodel.dart';
+import 'package:ip_tools/viewmodels/scanner_viewmodel/scanner_viewmodel.dart';
 import 'package:provider/provider.dart';
 
 class DevicesScreen extends StatefulWidget {
@@ -670,112 +670,6 @@ class _DevicesScreenState extends State<DevicesScreen> {
     );
   }
 
-  Widget _buildDeviceCard(ScannedDevice device) {
-    final isOnline = true; // Assume all scanned devices are online
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => DeviceDetailsScreen(device: device),
-          ),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: const Color(0xFF2C2C2E),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // Device Icon
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                _getDeviceIcon(device),
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-
-            const SizedBox(width: 16),
-
-            // Device Info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _getDeviceName(device),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Text(
-                        device.ip,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                      const Text(
-                        ' • ',
-                        style: TextStyle(color: Colors.white70),
-                      ),
-                      Text(
-                        _getConnectionType(device),
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // Status Indicators
-            Column(
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFD4A574),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Icon(Icons.wifi, color: Colors.white70, size: 16),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -838,7 +732,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
   }
 
   String _getStoredConnectionType(StoredDevice device) {
-    if (device.isGateway) return '5GHz';
+    if (device.isGateway) return '';
     if (device.name?.toLowerCase().contains('gaming') == true) return 'Gigabit';
     if (device.name?.toLowerCase().contains('iphone') == true) return 'WiFi 6';
     return 'WiFi';
@@ -857,38 +751,6 @@ class _DevicesScreenState extends State<DevicesScreen> {
     } else {
       return '${difference.inDays}d ago';
     }
-  }
-
-  IconData _getDeviceIcon(ScannedDevice device) {
-    if (device.isGateway) return Icons.router;
-    if (device.isSelf) return Icons.smartphone;
-    if (device.name?.toLowerCase().contains('macbook') == true) {
-      return Icons.laptop_mac;
-    }
-    if (device.name?.toLowerCase().contains('iphone') == true) {
-      return Icons.phone_iphone;
-    }
-    if (device.name?.toLowerCase().contains('tv') == true) return Icons.tv;
-    if (device.name?.toLowerCase().contains('gaming') == true) {
-      return Icons.sports_esports;
-    }
-    if (device.name?.toLowerCase().contains('printer') == true) {
-      return Icons.print;
-    }
-    return Icons.devices;
-  }
-
-  String _getDeviceName(ScannedDevice device) {
-    if (device.isGateway) return 'Home Router';
-    if (device.isSelf) return 'This Device';
-    return device.displayName;
-  }
-
-  String _getConnectionType(ScannedDevice device) {
-    if (device.isGateway) return '5GHz';
-    if (device.name?.toLowerCase().contains('gaming') == true) return 'Gigabit';
-    if (device.name?.toLowerCase().contains('iphone') == true) return 'WiFi 6';
-    return 'WiFi';
   }
 
   Future<void> _shareNetworkSummary(List<ScannedDevice> devices) async {

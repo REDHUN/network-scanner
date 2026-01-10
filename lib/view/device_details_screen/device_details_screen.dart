@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:jaal/models/network_model/open_port.dart';
-import 'package:jaal/models/network_model/scanned_device.dart';
-import 'package:jaal/service/port_scanner_service/port_scanner_service.dart';
-import 'package:jaal/service/share_service/share_service.dart';
+import 'package:ip_tools/models/network_model/open_port.dart';
+import 'package:ip_tools/models/network_model/scanned_device.dart';
+import 'package:ip_tools/service/port_scanner_service/port_scanner_service.dart';
+import 'package:ip_tools/service/share_service/share_service.dart';
 
 class DeviceDetailsScreen extends StatefulWidget {
   final ScannedDevice device;

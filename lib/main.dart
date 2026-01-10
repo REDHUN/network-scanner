@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:jaal/service/network_scanner_service/network_scanner_service.dart';
-import 'package:jaal/view/splash_screen/splash_screen.dart';
-import 'package:jaal/viewmodels/network_viewmodel/network_viewmodel.dart';
-import 'package:jaal/viewmodels/scanner_viewmodel/scanner_viewmodel.dart';
-import 'package:jaal/viewmodels/theme_viewmodel/theme_viewmodel.dart';
+import 'package:ip_tools/service/network_scanner_service/network_scanner_service.dart';
+import 'package:ip_tools/view/splash_screen/splash_screen.dart';
+import 'package:ip_tools/viewmodels/network_viewmodel/network_viewmodel.dart';
+import 'package:ip_tools/viewmodels/scanner_viewmodel/scanner_viewmodel.dart';
+import 'package:ip_tools/viewmodels/theme_viewmodel/theme_viewmodel.dart';
 import 'package:network_tools/network_tools.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
@@ -47,7 +47,7 @@ class MyApp extends StatelessWidget {
       child: Consumer<ThemeViewModel>(
         builder: (context, themeVM, child) {
           return MaterialApp(
-            title: 'Jaal : Network Scanner',
+            title: 'IP Tools : Network Scanner',
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: themeVM.themeMode,

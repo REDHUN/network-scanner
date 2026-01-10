@@ -13,7 +13,7 @@
         android:name="android.permission.NEARBY_WIFI_DEVICES"
         android:usesPermissionFlags="neverForLocation" />
     <application
-        android:label="Jaal : Network Scanner"
+        android:label="IP Tools : Network Scanner"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
         <activity

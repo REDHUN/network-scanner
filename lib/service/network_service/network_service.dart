@@ -1,4 +1,4 @@
-import 'package:jaal/models/network_model/network_info_model.dart';
+import 'package:ip_tools/models/network_model/network_info_model.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 
 class NetworkService {

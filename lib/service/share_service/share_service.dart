@@ -1,7 +1,7 @@
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter/services.dart';
-import 'package:jaal/models/network_model/scanned_device.dart';
-import 'package:jaal/models/network_model/open_port.dart';
+import 'package:ip_tools/models/network_model/scanned_device.dart';
+import 'package:ip_tools/models/network_model/open_port.dart';
 
 class ShareService {
   static final ShareService _instance = ShareService._internal();

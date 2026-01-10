@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:jaal/core/loadstate/load_state.dart';
-import 'package:jaal/viewmodels/network_viewmodel/network_viewmodel.dart';
+import 'package:ip_tools/core/loadstate/load_state.dart';
+import 'package:ip_tools/viewmodels/network_viewmodel/network_viewmodel.dart';
 import 'package:provider/provider.dart';
 
 class NetworkInfoWidget extends StatefulWidget {

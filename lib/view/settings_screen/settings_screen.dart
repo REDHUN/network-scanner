@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:jaal/common/widgets/app_icon.dart';
-import 'package:jaal/viewmodels/theme_viewmodel/theme_viewmodel.dart';
+import 'package:ip_tools/common/widgets/app_icon.dart';
+import 'package:ip_tools/viewmodels/theme_viewmodel/theme_viewmodel.dart';
 import 'package:provider/provider.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -90,7 +90,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               // Version info
               Center(
                 child: Text(
-                  'Jaal : Network Scanner v1.0.0 (Build 1)',
+                  'IP Tools : Network Scanner v1.0.0 (Build 1)',
                   style: TextStyle(
                     fontSize: 12,
                     color: Theme.of(

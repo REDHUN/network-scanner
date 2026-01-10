@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:jaal/common/widgets/app_icon.dart';
-import 'package:jaal/view/main_navigation/main_navigation.dart';
+import 'package:ip_tools/common/widgets/app_icon.dart';
+import 'package:ip_tools/view/app_wrapper/app_wrapper.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -72,7 +72,7 @@ class _SplashScreenState extends State<SplashScreen>
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) =>
-              const MainNavigation(),
+              const AppWrapper(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return FadeTransition(opacity: animation, child: child);
           },
@@ -130,7 +130,7 @@ class _SplashScreenState extends State<SplashScreen>
                                   text: const TextSpan(
                                     children: [
                                       TextSpan(
-                                        text: 'Jaal',
+                                        text: 'IP Tools',
                                         style: TextStyle(
                                           fontSize: 42,
                                           fontWeight: FontWeight.w700,

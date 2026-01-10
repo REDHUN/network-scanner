@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:developer';
 
-import 'package:jaal/models/network_model/network_info_model.dart';
-import 'package:jaal/models/network_model/scanned_device.dart';
-import 'package:jaal/models/storage/router_network_data.dart';
+import 'package:ip_tools/models/network_model/network_info_model.dart';
+import 'package:ip_tools/models/network_model/scanned_device.dart';
+import 'package:ip_tools/models/storage/router_network_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DeviceStorageService {
@@ -268,8 +268,9 @@ class DeviceStorageService {
   Future<List<RouterNetworkData>> getAllRouterNetworks() async {
     try {
       final allData = await _getAllRouterData();
-      return allData.values.toList()
-        ..sort((a, b) => b.lastScanTime.compareTo(a.lastScanTime)); // Sort by most recent
+      return allData.values.toList()..sort(
+        (a, b) => b.lastScanTime.compareTo(a.lastScanTime),
+      ); // Sort by most recent
     } catch (e) {
       log('Error getting all router networks: $e');
       return [];
@@ -292,13 +293,13 @@ class DeviceStorageService {
     try {
       final allRouters = await getAllRouterNetworks();
       final Set<String> uniqueDevices = {};
-      
+
       for (final router in allRouters) {
         for (final device in router.devices) {
           uniqueDevices.add(device.ip);
         }
       }
-      
+
       return uniqueDevices.length;
     } catch (e) {
       log('Error getting total device count: $e');
@@ -311,28 +312,30 @@ class DeviceStorageService {
     try {
       final allRouters = await getAllRouterNetworks();
       final currentRouterId = await getCurrentRouterId();
-      
+
       return {
         'totalRouters': allRouters.length,
         'currentRouter': currentRouterId,
-        'routers': allRouters.map((router) => {
-          'routerId': router.routerId,
-          'wifiName': router.wifiName ?? 'Unknown Network',
-          'gatewayIp': router.gatewayIp,
-          'deviceCount': router.devices.length,
-          'onlineDevices': router.devices.where((d) => d.isOnline).length,
-          'offlineDevices': router.devices.where((d) => !d.isOnline).length,
-          'lastScanTime': router.lastScanTime.toIso8601String(),
-          'isCurrent': router.routerId == currentRouterId,
-        }).toList(),
+        'routers': allRouters
+            .map(
+              (router) => {
+                'routerId': router.routerId,
+                'wifiName': router.wifiName ?? 'Unknown Network',
+                'gatewayIp': router.gatewayIp,
+                'deviceCount': router.devices.length,
+                'onlineDevices': router.devices.where((d) => d.isOnline).length,
+                'offlineDevices': router.devices
+                    .where((d) => !d.isOnline)
+                    .length,
+                'lastScanTime': router.lastScanTime.toIso8601String(),
+                'isCurrent': router.routerId == currentRouterId,
+              },
+            )
+            .toList(),
       };
     } catch (e) {
       log('Error getting router summary: $e');
-      return {
-        'totalRouters': 0,
-        'currentRouter': null,
-        'routers': [],
-      };
+      return {'totalRouters': 0, 'currentRouter': null, 'routers': []};
     }
   }
 
@@ -340,16 +343,16 @@ class DeviceStorageService {
   Future<void> deleteRouterData(String routerId) async {
     try {
       log('🗑️ Attempting to delete router data for: $routerId');
-      
+
       final allData = await _getAllRouterData();
       log('📊 Current router count before deletion: ${allData.length}');
-      
+
       if (allData.containsKey(routerId)) {
         allData.remove(routerId);
         await _saveAllRouterData(allData);
-        
+
         log('✅ Router data removed from storage');
-        
+
         // If we deleted the current router, clear current router ID
         final currentRouterId = await getCurrentRouterId();
         if (currentRouterId == routerId) {
@@ -357,7 +360,7 @@ class DeviceStorageService {
           await prefs.remove(_currentRouterKey);
           log('🔄 Cleared current router ID since it was deleted');
         }
-        
+
         log('✅ Successfully deleted router data for: $routerId');
         log('📊 Remaining router count: ${allData.length}');
       } else {

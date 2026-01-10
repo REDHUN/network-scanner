@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'package:jaal/models/network_model/scan_settings.dart';
-import 'package:jaal/models/network_model/scanned_device.dart';
+import 'package:ip_tools/models/network_model/scan_settings.dart';
+import 'package:ip_tools/models/network_model/scanned_device.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:network_tools/network_tools.dart';
 

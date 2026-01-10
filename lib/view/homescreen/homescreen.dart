@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:jaal/common/widgets/app_icon.dart';
-import 'package:jaal/core/loadstate/load_state.dart';
-import 'package:jaal/view/devices_screen/devices_screen.dart';
-import 'package:jaal/viewmodels/network_viewmodel/network_viewmodel.dart';
+import 'package:ip_tools/common/widgets/app_icon.dart';
+import 'package:ip_tools/core/loadstate/load_state.dart';
+import 'package:ip_tools/service/permission_manager/permission_manager.dart';
+import 'package:ip_tools/view/devices_screen/devices_screen.dart';
+import 'package:ip_tools/viewmodels/network_viewmodel/network_viewmodel.dart';
 import 'package:provider/provider.dart';
 
 class Homescreen extends StatefulWidget {
@@ -31,10 +32,19 @@ class _HomescreenState extends State<Homescreen> {
       floatingActionButton: Container(
         margin: const EdgeInsets.only(bottom: 20),
         child: FloatingActionButton.extended(
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => const DevicesScreen()),
-            );
+          onPressed: () async {
+            // Check location permission before navigating to devices screen
+            final hasPermission =
+                await PermissionManager.checkLocationPermissionForFeature(
+                  context,
+                  featureName: 'Network Scanning',
+                );
+
+            if (hasPermission && mounted) {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const DevicesScreen()),
+              );
+            }
           },
           backgroundColor: const Color(0xFF2C2C2E),
           foregroundColor: Colors.white,
@@ -90,7 +100,7 @@ class _HomescreenState extends State<Homescreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Jaal : Network Scanner',
+                          'IP Tools : Network Scanner',
                           style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.w700,

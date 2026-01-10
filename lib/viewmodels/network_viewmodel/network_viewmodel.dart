@@ -1,10 +1,10 @@
 import 'dart:async';
 
-import 'package:jaal/core/baseviewmodel/base_viewmodel.dart';
-import 'package:jaal/models/network_model/network_info_model.dart';
-import 'package:jaal/service/network_connectivity_service/network_connectivity_service.dart';
-import 'package:jaal/service/network_service/network_service.dart';
-import 'package:jaal/service/permission_service/permission_service.dart';
+import 'package:ip_tools/core/baseviewmodel/base_viewmodel.dart';
+import 'package:ip_tools/models/network_model/network_info_model.dart';
+import 'package:ip_tools/service/network_connectivity_service/network_connectivity_service.dart';
+import 'package:ip_tools/service/network_service/network_service.dart';
+import 'package:ip_tools/service/permission_service/permission_service.dart';
 
 class NetworkViewModel extends BaseViewModel {
   final NetworkService _networkService;
