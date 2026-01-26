@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ip_tools/common/utils/snackbar_utils.dart';
 import 'package:ip_tools/common/widgets/app_icon.dart';
+import 'package:ip_tools/service/permission_manager/permission_manager.dart';
+import 'package:ip_tools/service/permission_preferences_service/permission_preferences_service.dart';
 import 'package:ip_tools/viewmodels/theme_viewmodel/theme_viewmodel.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -14,6 +16,8 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  final _preferencesService = PermissionPreferencesService();
+  bool _showDebugSection = false;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -95,6 +99,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
               // About Card
               _buildMenuCard('About', Icons.info_outline, onTap: _showAboutApp),
               const SizedBox(height: 32),
+
+              // DEBUG Section (hidden by default)
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _showDebugSection = !_showDebugSection;
+                  });
+                },
+                child: Text(
+                  'DEBUG OPTIONS',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: _showDebugSection
+                        ? const Color(0xFFD4A574)
+                        : Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ),
+
+              if (_showDebugSection) ...[
+                const SizedBox(height: 16),
+
+                // Reset First Time Launch
+                _buildMenuCard(
+                  'Reset First Time Launch',
+                  Icons.refresh,
+                  onTap: _resetFirstTimeLaunch,
+                ),
+                const SizedBox(height: 12),
+
+                // Show Permission Status
+                _buildMenuCard(
+                  'Show Permission Status',
+                  Icons.info,
+                  onTap: _showPermissionStatus,
+                ),
+                const SizedBox(height: 12),
+
+                // Clear All Preferences
+                _buildMenuCard(
+                  'Clear All Preferences',
+                  Icons.delete_outline,
+                  onTap: _clearAllPreferences,
+                ),
+              ],
 
               const SizedBox(height: 16),
 
@@ -852,5 +905,101 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
     );
+  }
+
+  // Debug Methods
+  Future<void> _resetFirstTimeLaunch() async {
+    try {
+      await _preferencesService.resetFirstTimeLaunch();
+      if (mounted) {
+        SnackbarUtils.showSuccess(
+          context,
+          'First time launch status reset. Restart the app to see the permission screen.',
+          icon: Icons.refresh,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackbarUtils.showError(
+          context,
+          'Error resetting first time launch: $e',
+        );
+      }
+    }
+  }
+
+  Future<void> _showPermissionStatus() async {
+    try {
+      final summary = await PermissionManager.getPermissionStatusSummary();
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Permission Status'),
+            content: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Is Granted: ${summary['isGranted']}'),
+                  Text(
+                    'Is Permanently Denied: ${summary['isPermanentlyDenied']}',
+                  ),
+                  Text('Status: ${summary['statusString']}'),
+                  Text('Should Show Screen: ${summary['shouldShowScreen']}'),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Preferences:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    'Should Show Warning: ${summary['preferences']['shouldShowWarning']}',
+                  ),
+                  Text(
+                    'Has Been Asked: ${summary['preferences']['hasBeenAsked']}',
+                  ),
+                  Text(
+                    'Denied Count: ${summary['preferences']['deniedCount']}',
+                  ),
+                  Text(
+                    'Is First Time Launch: ${summary['preferences']['isFirstTimeLaunch']}',
+                  ),
+                  Text(
+                    'Has Been Asked On First Launch: ${summary['preferences']['hasBeenAskedOnFirstLaunch']}',
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Close'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackbarUtils.showError(context, 'Error getting permission status: $e');
+      }
+    }
+  }
+
+  Future<void> _clearAllPreferences() async {
+    try {
+      await _preferencesService.clearAllPermissionPreferences();
+      if (mounted) {
+        SnackbarUtils.showSuccess(
+          context,
+          'All preferences cleared. Restart the app to reset to initial state.',
+          icon: Icons.delete_outline,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackbarUtils.showError(context, 'Error clearing preferences: $e');
+      }
+    }
   }
 }

@@ -8,6 +8,9 @@ class PermissionPreferencesService {
   static const String _locationPermissionAskedKey = 'location_permission_asked';
   static const String _locationPermissionDeniedCountKey =
       'location_permission_denied_count';
+  static const String _isFirstTimeLaunchKey = 'is_first_time_launch';
+  static const String _hasBeenAskedOnFirstLaunchKey =
+      'has_been_asked_on_first_launch';
 
   /// Check if user has chosen "Don't show again" for location warning
   Future<bool> shouldShowLocationWarning() async {
@@ -97,6 +100,8 @@ class PermissionPreferencesService {
       await prefs.remove(_dontShowLocationWarningKey);
       await prefs.remove(_locationPermissionAskedKey);
       await prefs.remove(_locationPermissionDeniedCountKey);
+      await prefs.remove(_isFirstTimeLaunchKey);
+      await prefs.remove(_hasBeenAskedOnFirstLaunchKey);
       log('Cleared all permission preferences');
     } catch (e) {
       log('Error clearing permission preferences: $e');
@@ -109,6 +114,64 @@ class PermissionPreferencesService {
       'shouldShowWarning': await shouldShowLocationWarning(),
       'hasBeenAsked': await hasLocationPermissionBeenAsked(),
       'deniedCount': await getLocationPermissionDeniedCount(),
+      'isFirstTimeLaunch': await isFirstTimeLaunch(),
+      'hasBeenAskedOnFirstLaunch': await hasBeenAskedOnFirstLaunch(),
     };
+  }
+
+  /// Check if this is the first time the app is launched
+  Future<bool> isFirstTimeLaunch() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool(_isFirstTimeLaunchKey) ?? true;
+    } catch (e) {
+      log('Error checking first time launch status: $e');
+      return true; // Default to first time launch
+    }
+  }
+
+  /// Mark that the app has been launched (no longer first time)
+  Future<void> setAppLaunched() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_isFirstTimeLaunchKey, false);
+      log('Marked app as launched (no longer first time)');
+    } catch (e) {
+      log('Error setting app launched status: $e');
+    }
+  }
+
+  /// Reset first time launch status (for testing/debugging)
+  Future<void> resetFirstTimeLaunch() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_isFirstTimeLaunchKey, true);
+      await prefs.setBool(_hasBeenAskedOnFirstLaunchKey, false);
+      log('Reset first time launch status and asked status');
+    } catch (e) {
+      log('Error resetting first time launch status: $e');
+    }
+  }
+
+  /// Check if user has been asked for permission on first launch
+  Future<bool> hasBeenAskedOnFirstLaunch() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool(_hasBeenAskedOnFirstLaunchKey) ?? false;
+    } catch (e) {
+      log('Error checking first launch asked status: $e');
+      return false;
+    }
+  }
+
+  /// Mark that user has been asked for permission on first launch
+  Future<void> setAskedOnFirstLaunch() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_hasBeenAskedOnFirstLaunchKey, true);
+      log('Marked as asked on first launch');
+    } catch (e) {
+      log('Error setting first launch asked status: $e');
+    }
   }
 }

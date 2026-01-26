@@ -54,6 +54,12 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
           await _preferencesService.setDontShowLocationWarning(true);
         }
 
+        // Mark app as launched since user interacted with permission screen
+        await _preferencesService.setAppLaunched();
+
+        // Mark that user has been asked on first launch
+        await _preferencesService.setAskedOnFirstLaunch();
+
         if (widget.onPermissionGranted != null) {
           widget.onPermissionGranted!();
         } else {
@@ -91,6 +97,12 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
     if (_dontShowAgain) {
       await _preferencesService.setDontShowLocationWarning(true);
     }
+
+    // Mark app as launched since user interacted with permission screen
+    await _preferencesService.setAppLaunched();
+
+    // Mark that user has been asked on first launch
+    await _preferencesService.setAskedOnFirstLaunch();
 
     if (widget.onSkipped != null) {
       widget.onSkipped!();

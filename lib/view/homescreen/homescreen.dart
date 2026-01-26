@@ -300,12 +300,10 @@ class _HomescreenState extends State<Homescreen> with WidgetsBindingObserver {
                                       vm.getWifiDisplayName(),
                                       style: const TextStyle(
                                         color: Colors.white,
-                                        fontSize: 22,
+                                        fontSize: 16,
                                         fontWeight: FontWeight.w700,
                                         letterSpacing: -0.5,
                                       ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
                                     ),
                                     const SizedBox(height: 2),
                                     Text(

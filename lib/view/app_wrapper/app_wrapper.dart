@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ip_tools/service/network_connectivity_service/network_connectivity_service.dart';
 import 'package:ip_tools/service/permission_manager/permission_manager.dart';
+import 'package:ip_tools/view/location_permission_screen/location_permission_screen.dart';
 import 'package:ip_tools/view/main_navigation/main_navigation.dart';
 import 'package:ip_tools/view/wifi_connection_screen/wifi_connection_screen.dart';
 
@@ -18,7 +19,6 @@ class _AppWrapperState extends State<AppWrapper> {
   bool _shouldShowPermissionScreen = false;
   bool _isCheckingWiFi = false;
   bool _isWiFiConnected = false;
-  bool _isLocationPermissionGranted = false;
   String _loadingMessage = 'Initializing...';
 
   @override
@@ -220,6 +220,14 @@ class _AppWrapperState extends State<AppWrapper> {
     // Show WiFi connection screen if not connected
     if (!_isWiFiConnected) {
       return WiFiConnectionScreen(onWiFiConnected: _onWiFiConnected);
+    }
+
+    // Show location permission screen if needed
+    if (_shouldShowPermissionScreen) {
+      return LocationPermissionScreen(
+        onPermissionGranted: _onPermissionGranted,
+        onSkipped: _onPermissionSkipped,
+      );
     }
 
     // Show main app

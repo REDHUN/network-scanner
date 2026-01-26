@@ -26,11 +26,25 @@ class PermissionManager {
         return false;
       }
 
-      log('Should show location permission screen');
-      return true;
+      // Check if this is the first time launch AND user hasn't been asked yet
+      final isFirstTime = await _preferencesService.isFirstTimeLaunch();
+      final hasBeenAskedOnFirstLaunch = await _preferencesService
+          .hasBeenAskedOnFirstLaunch();
+
+      if (isFirstTime && !hasBeenAskedOnFirstLaunch) {
+        log(
+          'First time launch and user has not been asked yet - should show location permission screen',
+        );
+        return true;
+      }
+
+      log(
+        'Not showing permission screen - either not first time or user already asked',
+      );
+      return false;
     } catch (e) {
       log('Error checking if should show permission screen: $e');
-      return true; // Default to showing if there's an error
+      return false; // Default to not showing if there's an error
     }
   }
 
@@ -99,6 +113,9 @@ class PermissionManager {
       } else {
         log('Skipping location permission screen on startup');
       }
+
+      // Mark app as launched after handling permission screen
+      await _preferencesService.setAppLaunched();
     } catch (e) {
       log('Error handling location permission on startup: $e');
     }
