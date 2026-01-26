@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ip_tools/core/loadstate/load_state.dart';
+import 'package:ip_tools/service/permission_service/permission_service.dart';
 import 'package:ip_tools/viewmodels/network_viewmodel/network_viewmodel.dart';
 import 'package:provider/provider.dart';
 
@@ -144,9 +145,25 @@ class _NetworkInfoWidgetState extends State<NetworkInfoWidget> {
                       context: context,
                       icon: Icons.network_wifi,
                       title: 'Wi-Fi Name',
-                      value: _formatValue(vm.networkInfo?.wifiName ?? 'N/A'),
-                      isActive: vm.networkInfo?.wifiName != null,
-                      hasGoldenIcon: vm.networkInfo?.wifiName != null,
+                      value: _formatWifiName(vm),
+                      isActive:
+                          vm.locationStatus == LocationStatus.available &&
+                          vm.networkInfo?.wifiName != null,
+                      hasGoldenIcon:
+                          vm.locationStatus == LocationStatus.available &&
+                          vm.networkInfo?.wifiName != null,
+                      showLocationButton:
+                          vm.locationStatus != null &&
+                          vm.locationStatus != LocationStatus.available,
+                      onLocationAction: () async {
+                        if (vm.locationStatus ==
+                            LocationStatus.serviceDisabled) {
+                          await vm.openLocationSettings();
+                        } else if (vm.locationStatus ==
+                            LocationStatus.permissionDenied) {
+                          await vm.requestLocationPermission();
+                        }
+                      },
                     ),
                   ],
                 ),
@@ -167,6 +184,8 @@ class _NetworkInfoWidgetState extends State<NetworkInfoWidget> {
     required String value,
     bool isActive = true,
     bool hasGoldenIcon = false,
+    bool showLocationButton = false,
+    VoidCallback? onLocationAction,
   }) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -184,19 +203,47 @@ class _NetworkInfoWidgetState extends State<NetworkInfoWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Icon
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFD4A574), // Golden accent
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              icon,
-              color: const Color(0xFF2C2C2E), // Dark icon on golden background
-
-              size: 20,
-            ),
+          // Icon and Action Button Row
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD4A574), // Golden accent
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  icon,
+                  color: const Color(
+                    0xFF2C2C2E,
+                  ), // Dark icon on golden background
+                  size: 20,
+                ),
+              ),
+              const Spacer(),
+              if (showLocationButton && onLocationAction != null)
+                GestureDetector(
+                  onTap: onLocationAction,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD4A574),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Text(
+                      'Enable',
+                      style: TextStyle(
+                        color: Color(0xFF2C2C2E),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
 
           const Spacer(),
@@ -242,5 +289,12 @@ class _NetworkInfoWidgetState extends State<NetworkInfoWidget> {
       return '${value.substring(0, 12)}...';
     }
     return value;
+  }
+
+  String _formatWifiName(NetworkViewModel vm) {
+    if (vm.locationStatus != LocationStatus.available) {
+      return vm.getLocationMessage();
+    }
+    return _formatValue(vm.networkInfo?.wifiName ?? 'N/A');
   }
 }
