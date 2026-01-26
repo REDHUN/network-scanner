@@ -1,0 +1,80 @@
+SHORT DESCRIPTION (80 characters):
+Discover and analyze devices on your Wi-Fi network with advanced port scanning.
+
+FULL DESCRIPTION (Under 4000 characters):
+
+🔍 DISCOVER YOUR NETWORK LIKE NEVER BEFORE
+
+IP Tools : Network Scanner transforms your device into a powerful network intelligence center. Perfect for network administrators, IT professionals, and tech enthusiasts who need comprehensive network analysis capabilities.
+
+⚡ KEY FEATURES:
+
+🌐 NETWORK DEVICE DISCOVERY
+• Scan entire local network with one tap
+• Discover all connected devices instantly
+• View IP addresses, MAC addresses, device names
+• Real-time monitoring with automatic detection
+
+🔒 ADVANCED PORT SCANNING  
+• Professional port scanner (Common Ports & Top 100 modes)
+• Security analysis of open ports and services
+• Identify potential vulnerabilities
+• Detailed service descriptions and recommendations
+
+📊 NETWORK INTELLIGENCE DASHBOARD
+• Beautiful interface with real-time network status
+• Visual signal strength indicators
+• Complete network details (Gateway, Subnet, WiFi info)
+• Historical data and router connection history
+
+📱 SMART DEVICE MANAGEMENT
+• Organize by online/offline status
+• Filter and sort devices easily
+• Track device activity and timestamps
+• Export reports and scan results
+
+🚀 PROFESSIONAL TOOLS
+• Export detailed network reports
+• Share results with team members
+• Multiple optimized scan modes
+• Network troubleshooting capabilities
+
+🎨 MODERN DESIGN
+• Sleek dark theme with professional appearance
+• Intuitive navigation for all skill levels
+• Responsive design for all screens
+• Smooth animations and accessibility support
+
+🔐 PRIVACY & SECURITY
+• All scanning performed locally
+• No external data transmission
+• Complete privacy protection
+• Secure local storage
+
+💡 PERFECT FOR:
+• Network administrators
+• IT professionals
+• Home network security
+• Tech enthusiasts
+• Security audits
+• Network troubleshooting
+
+🌟 WHY CHOOSE IP TOOLS?
+✓ Fast & accurate scanning
+✓ Professional-grade features
+✓ User-friendly design
+✓ Complete network analysis
+✓ Privacy-focused approach
+✓ Regular updates
+
+📋 USE CASES:
+• Identify unauthorized devices
+• Troubleshoot connectivity issues
+• Monitor IoT device security
+• Document network infrastructure
+• Verify router configurations
+• Discover bandwidth consumers
+
+Transform your device into a powerful network analysis tool. Download now and take control of your network security!
+
+KEYWORDS: network scanner, IP scanner, port scanner, WiFi analyzer, network tools, device discovery, network security, IT tools, network monitoring

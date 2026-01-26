@@ -1,4 +1,3 @@
 class AppTextConstants {
-
-  static const String appName = 'Network Scanner';
+  static const String appName = 'IP Tools : Network Scanner';
 }

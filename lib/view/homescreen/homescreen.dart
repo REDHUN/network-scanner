@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:ip_tools/common/utils/snackbar_utils.dart';
 import 'package:ip_tools/common/widgets/app_icon.dart';
 import 'package:ip_tools/core/loadstate/load_state.dart';
 import 'package:ip_tools/service/permission_manager/permission_manager.dart';
@@ -102,7 +104,7 @@ class _HomescreenState extends State<Homescreen> {
                         Text(
                           'IP Tools : Network Scanner',
                           style: TextStyle(
-                            fontSize: 28,
+                            fontSize: 22,
                             fontWeight: FontWeight.w700,
                             color: Theme.of(
                               context,
@@ -166,8 +168,8 @@ class _HomescreenState extends State<Homescreen> {
                         Row(
                           children: [
                             Container(
-                              width: 56,
-                              height: 56,
+                              width: 30,
+                              height: 30,
                               decoration: BoxDecoration(
                                 color: Colors.white.withValues(alpha: 0.1),
                                 shape: BoxShape.circle,
@@ -177,7 +179,7 @@ class _HomescreenState extends State<Homescreen> {
                                     ? Icons.wifi
                                     : Icons.wifi_off,
                                 color: const Color(0xFFD4A574),
-                                size: 28,
+                                size: 20,
                               ),
                             ),
                             const Spacer(),
@@ -227,14 +229,14 @@ class _HomescreenState extends State<Homescreen> {
                           ],
                         ),
 
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 15),
 
                         // Network Name
                         Text(
                           vm.networkInfo?.wifiName ?? 'Loading...',
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 28,
+                            fontSize: 22,
                             fontWeight: FontWeight.w700,
                             letterSpacing: -0.5,
                           ),
@@ -242,7 +244,7 @@ class _HomescreenState extends State<Homescreen> {
                           overflow: TextOverflow.ellipsis,
                         ),
 
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 2),
 
                         Text(
                           vm.state == LoadState.loading
@@ -257,31 +259,7 @@ class _HomescreenState extends State<Homescreen> {
                           ),
                         ),
 
-                        const SizedBox(height: 32),
-
-                        // Signal and Ping Stats
-                        // Row(
-                        //   children: [
-                        //     Expanded(
-                        //       child: _buildStatCard(
-                        //         'SIGNAL',
-                        //         '-45',
-                        //         'dBm',
-                        //         Colors.white70,
-                        //       ),
-                        //     ),
-                        //     const SizedBox(width: 16),
-                        //     Expanded(
-                        //       child: _buildStatCard(
-                        //         'PING',
-                        //         '12',
-                        //         'ms',
-                        //         const Color(0xFFD4A574),
-                        //       ),
-                        //     ),
-                        //   ],
-                        // ),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 15),
 
                         // Signal Strength Bars
                         _buildSignalBars(),
@@ -326,19 +304,19 @@ class _HomescreenState extends State<Homescreen> {
                     children: [
                       _buildDetailCard(
                         'LOCAL IP',
-                        vm.networkInfo?.wifiIP ?? '192.168.1.104',
+                        vm.networkInfo?.wifiIP ?? '',
                         Icons.devices,
                       ),
                       const SizedBox(height: 12),
                       _buildDetailCard(
                         'GATEWAY',
-                        vm.networkInfo?.gateway ?? '192.168.1.1',
+                        vm.networkInfo?.gateway ?? '',
                         Icons.router,
                       ),
                       const SizedBox(height: 12),
                       _buildDetailCard(
                         'SUBNET MASK',
-                        vm.networkInfo?.subnet ?? '255.255.255.0',
+                        vm.networkInfo?.subnet ?? '',
                         Icons.grid_view,
                       ),
 
@@ -356,64 +334,22 @@ class _HomescreenState extends State<Homescreen> {
     );
   }
 
-  Widget _buildStatCard(
-    String label,
-    String value,
-    String unit,
-    Color valueColor,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white54,
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Flexible(
-                child: Text(
-                  value,
-                  style: TextStyle(
-                    color: valueColor,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                unit,
-                style: const TextStyle(
-                  color: Colors.white54,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+  Future<void> _copyToClipboard(String value, String label) async {
+    try {
+      await Clipboard.setData(ClipboardData(text: value));
+      if (mounted) {
+        SnackbarUtils.showCopySuccess(context, label);
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackbarUtils.showError(context, 'Failed to copy: ${e.toString()}');
+      }
+    }
   }
 
   Widget _buildSignalBars() {
     return SizedBox(
-      height: 40,
+      height: 24,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -444,7 +380,7 @@ class _HomescreenState extends State<Homescreen> {
 
           return Container(
             width: 5,
-            height: 40 * heights[index],
+            height: 24 * heights[index],
             decoration: BoxDecoration(
               color: isActive
                   ? const Color(0xFFD4A574)
@@ -510,20 +446,23 @@ class _HomescreenState extends State<Homescreen> {
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.color?.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              Icons.copy,
-              color: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
-              size: 16,
+          GestureDetector(
+            onTap: () => _copyToClipboard(value, label),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.color?.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.copy,
+                color: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+                size: 16,
+              ),
             ),
           ),
         ],

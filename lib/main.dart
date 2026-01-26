@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:ip_tools/service/network_scanner_service/network_scanner_service.dart';
 import 'package:ip_tools/view/splash_screen/splash_screen.dart';
 import 'package:ip_tools/viewmodels/network_viewmodel/network_viewmodel.dart';
@@ -15,6 +16,12 @@ import 'service/permission_service/permission_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Lock orientation to portrait only
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
 
   final dir = await getApplicationDocumentsDirectory();
   await configureNetworkTools(dir.path, enableDebugging: false);

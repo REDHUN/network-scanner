@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ip_tools/common/utils/snackbar_utils.dart';
 import 'package:ip_tools/models/network_model/scanned_device.dart';
 import 'package:ip_tools/models/storage/router_network_data.dart';
 import 'package:ip_tools/service/share_service/share_service.dart';
@@ -51,25 +52,87 @@ class _DevicesScreenState extends State<DevicesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      floatingActionButton: Consumer<NetworkScannerProvider>(
+        builder: (context, provider, _) {
+          final hasDevices = provider.devices.isNotEmpty;
+
+          if (!hasDevices) return const SizedBox.shrink();
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 20),
+            child: FloatingActionButton.extended(
+              onPressed: () => _shareNetworkSummary(provider.devices),
+              backgroundColor: const Color(0xFFD4A574),
+              foregroundColor: Colors.white,
+              elevation: 8,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              icon: const Icon(Icons.share, size: 20),
+              label: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Share Results',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                  Text(
+                    '${provider.devices.length} devices',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.white.withValues(alpha: 0.8),
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: SafeArea(
         child: Column(
           children: [
             // Header
             Padding(
               padding: const EdgeInsets.all(24.0),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Devices',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).textTheme.headlineLarge?.color,
-                    ),
-                  ),
-                  const Spacer(),
                   Row(
                     children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Devices',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                                color: Theme.of(
+                                  context,
+                                ).textTheme.headlineLarge?.color,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Scan, view, and share network device information',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.color
+                                    ?.withValues(alpha: 0.6),
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                       Consumer<NetworkScannerProvider>(
                         builder: (context, provider, _) {
                           return GestureDetector(
@@ -89,38 +152,6 @@ class _DevicesScreenState extends State<DevicesScreen> {
                                       ).textTheme.headlineLarge?.color,
                                       size: 24,
                                     ),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      Consumer<NetworkScannerProvider>(
-                        builder: (context, provider, _) {
-                          return GestureDetector(
-                            onTap: provider.devices.isNotEmpty
-                                ? () => _shareNetworkSummary(provider.devices)
-                                : null,
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: provider.devices.isNotEmpty
-                                  ? BoxDecoration(
-                                      color: const Color(
-                                        0xFFD4A574,
-                                      ).withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                    )
-                                  : null,
-                              child: Icon(
-                                Icons.share,
-                                color: provider.devices.isNotEmpty
-                                    ? const Color(0xFFD4A574)
-                                    : Theme.of(context)
-                                          .textTheme
-                                          .headlineLarge
-                                          ?.color
-                                          ?.withValues(alpha: 0.3),
-                                size: 24,
-                              ),
                             ),
                           );
                         },
@@ -294,35 +325,121 @@ class _DevicesScreenState extends State<DevicesScreen> {
 
         const SizedBox(height: 24),
 
-        // Router Change Notification
-        if (provider.hasRouterChanged)
-          Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFD4A574).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: const Color(0xFFD4A574).withValues(alpha: 0.3),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.wifi, color: const Color(0xFFD4A574), size: 20),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Connected to different network. Loading stored data...',
-                    style: TextStyle(
-                      color: const Color(0xFFD4A574),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+        // // Router Change Notification
+        // if (provider.hasRouterChanged)
+        //   Container(
+        //     margin: const EdgeInsets.only(bottom: 16),
+        //     padding: const EdgeInsets.all(16),
+        //     decoration: BoxDecoration(
+        //       color: const Color(0xFFD4A574).withValues(alpha: 0.1),
+        //       borderRadius: BorderRadius.circular(12),
+        //       border: Border.all(
+        //         color: const Color(0xFFD4A574).withValues(alpha: 0.3),
+        //       ),
+        //     ),
+        //     child: Row(
+        //       children: [
+        //         Icon(Icons.wifi, color: const Color(0xFFD4A574), size: 20),
+        //         const SizedBox(width: 12),
+        //         Expanded(
+        //           child: Text(
+        //             'Connected to different network. Loading stored data...',
+        //             style: TextStyle(
+        //               color: const Color(0xFFD4A574),
+        //               fontSize: 14,
+        //               fontWeight: FontWeight.w500,
+        //             ),
+        //           ),
+        //         ),
+        //       ],
+        //     ),
+        //   ),
+
+        // // Share Banner (when devices available)
+        // if (filteredDevices.isNotEmpty) ...[
+        //   const SizedBox(height: 16),
+        //   Container(
+        //     width: double.infinity,
+        //     padding: const EdgeInsets.all(16),
+        //     decoration: BoxDecoration(
+        //       gradient: LinearGradient(
+        //         colors: [
+        //           const Color(0xFFD4A574).withValues(alpha: 0.1),
+        //           const Color(0xFFD4A574).withValues(alpha: 0.05),
+        //         ],
+        //         begin: Alignment.centerLeft,
+        //         end: Alignment.centerRight,
+        //       ),
+        //       borderRadius: BorderRadius.circular(12),
+        //       border: Border.all(
+        //         color: const Color(0xFFD4A574).withValues(alpha: 0.2),
+        //       ),
+        //     ),
+        //     child: Row(
+        //       children: [
+        //         Container(
+        //           padding: const EdgeInsets.all(8),
+        //           decoration: BoxDecoration(
+        //             color: const Color(0xFFD4A574),
+        //             borderRadius: BorderRadius.circular(8),
+        //           ),
+        //           child: const Icon(Icons.share, color: Colors.white, size: 16),
+        //         ),
+        //         const SizedBox(width: 12),
+        //         Expanded(
+        //           child: Column(
+        //             crossAxisAlignment: CrossAxisAlignment.start,
+        //             children: [
+        //               Text(
+        //                 'Export Network Scan',
+        //                 style: TextStyle(
+        //                   fontSize: 14,
+        //                   fontWeight: FontWeight.w600,
+        //                   color: Theme.of(
+        //                     context,
+        //                   ).textTheme.headlineLarge?.color,
+        //                 ),
+        //               ),
+        //               const SizedBox(height: 2),
+        //               Text(
+        //                 'Share ${filteredDevices.length} device${filteredDevices.length == 1 ? '' : 's'} with detailed information',
+        //                 style: TextStyle(
+        //                   fontSize: 12,
+        //                   color: Theme.of(
+        //                     context,
+        //                   ).textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+        //                 ),
+        //               ),
+        //             ],
+        //           ),
+        //         ),
+        //         GestureDetector(
+        //           onTap: () => _shareNetworkSummary(provider.devices),
+        //           child: Container(
+        //             padding: const EdgeInsets.symmetric(
+        //               horizontal: 12,
+        //               vertical: 6,
+        //             ),
+        //             decoration: BoxDecoration(
+        //               color: const Color(0xFFD4A574),
+        //               borderRadius: BorderRadius.circular(8),
+        //             ),
+        //             child: const Text(
+        //               'Share',
+        //               style: TextStyle(
+        //                 color: Colors.white,
+        //                 fontSize: 12,
+        //                 fontWeight: FontWeight.w600,
+        //               ),
+        //             ),
+        //           ),
+        //         ),
+        //       ],
+        //     ),
+        //   ),
+        // ],
+
+        // const SizedBox(height: 16),
 
         // Section Header
         Row(
@@ -382,12 +499,12 @@ class _DevicesScreenState extends State<DevicesScreen> {
     required bool isOnline,
   }) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: isOnline
             ? const Color(0xFF2C2C2E)
             : Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.1),
@@ -396,57 +513,61 @@ class _DevicesScreenState extends State<DevicesScreen> {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Icon(
-                isOnline ? Icons.wifi : Icons.wifi_off,
-                color: isOnline
-                    ? const Color(0xFFD4A574)
-                    : Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: TextStyle(
-                  color: isOnline
-                      ? const Color(0xFFD4A574)
-                      : Theme.of(
-                          context,
-                        ).textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
+          // Icon and Title
+          Icon(
+            isOnline ? Icons.wifi : Icons.wifi_off,
+            color: isOnline
+                ? const Color(0xFFD4A574)
+                : Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+            size: 20,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: isOnline
+                        ? const Color(0xFFD4A574)
+                        : Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: isOnline
+                        ? Colors.white70
+                        : Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Count
           Text(
             count.toString(),
             style: TextStyle(
               color: isOnline
                   ? Colors.white
                   : Theme.of(context).textTheme.headlineLarge?.color,
-              fontSize: 32,
+              fontSize: 20,
               fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: TextStyle(
-              color: isOnline
-                  ? Colors.white70
-                  : Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
             ),
           ),
         ],
@@ -758,31 +879,14 @@ class _DevicesScreenState extends State<DevicesScreen> {
       await _shareService.shareNetworkSummary(devices, null);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white, size: 20),
-                SizedBox(width: 12),
-                Text('Network summary shared successfully!'),
-              ],
-            ),
-            backgroundColor: const Color(0xFF30A46C),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
+        SnackbarUtils.showSuccess(
+          context,
+          'Network summary shared successfully!',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to share: ${e.toString()}'),
-            backgroundColor: const Color(0xFFFF3B30),
-          ),
-        );
+        SnackbarUtils.showError(context, 'Failed to share: ${e.toString()}');
       }
     }
   }

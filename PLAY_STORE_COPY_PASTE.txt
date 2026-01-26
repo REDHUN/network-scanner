@@ -1,0 +1,124 @@
+===== COPY-PASTE READY PLAY STORE CONTENT =====
+
+APP TITLE (30 characters max):
+IP Tools : Network Scanner
+
+SHORT DESCRIPTION (80 characters max):
+Discover and analyze devices on your Wi-Fi network with advanced port scanning.
+
+FULL DESCRIPTION (Copy this entire text):
+
+🔍 Discover Your Network Like Never Before
+
+IP Tools : Network Scanner transforms your device into a powerful network intelligence center. Perfect for IT professionals, network administrators, and tech enthusiasts who need comprehensive network analysis capabilities.
+
+⚡ KEY FEATURES
+
+🌐 NETWORK DEVICE DISCOVERY
+• Scan your entire local network with a single tap
+• Instantly discover all connected devices (phones, laptops, smart TVs, IoT devices)
+• View detailed information: IP addresses, MAC addresses, device names
+• Real-time monitoring with automatic device detection
+
+🔒 ADVANCED PORT SCANNING
+• Professional port scanner with Common Ports and Top 100 modes
+• Detailed security analysis of open ports and running services
+• Identify potential security vulnerabilities on network devices
+• Comprehensive service descriptions and security recommendations
+
+📊 NETWORK INTELLIGENCE DASHBOARD
+• Beautiful, intuitive interface with real-time network status
+• Visual network signal strength indicators
+• Complete network details (Gateway, Subnet, WiFi information)
+• Historical network data and router connection history
+
+📱 SMART DEVICE MANAGEMENT
+• Organize devices by online/offline status
+• Filter and sort devices for easy management
+• Track device activity and last seen timestamps
+• Export device lists and detailed scan results
+
+🚀 PROFESSIONAL TOOLS
+• Export comprehensive network reports and security analyses
+• Share scan results with team members for collaboration
+• Multiple scan modes optimized for different use cases
+• Network troubleshooting and diagnostic capabilities
+
+🎨 MODERN DESIGN
+• Sleek dark theme with professional golden accents
+• Intuitive navigation designed for all skill levels
+• Responsive design optimized for all screen sizes
+• Smooth animations and accessibility-compliant interface
+
+🔐 PRIVACY & SECURITY
+• All scanning performed locally on your device
+• No data transmitted to external servers
+• Complete privacy protection for your network information
+• Transparent privacy policy and secure local storage
+
+💡 PERFECT FOR
+• Network administrators managing corporate networks
+• IT professionals troubleshooting connectivity issues
+• Home users securing their Wi-Fi networks
+• Security professionals conducting network audits
+• Tech enthusiasts exploring network topology
+• Students learning about network protocols
+
+🌟 WHY CHOOSE IP TOOLS?
+✓ Fast & accurate scanning with professional-grade results
+✓ Enterprise-level features in an intuitive mobile app
+✓ User-friendly design suitable for beginners and experts
+✓ Complete network analysis toolkit in one application
+✓ Privacy-focused approach with local-only processing
+✓ Regular updates with new features and improvements
+
+📋 COMMON USE CASES
+• Identify unauthorized devices on your network
+• Troubleshoot network connectivity problems
+• Monitor IoT device security and accessibility
+• Document network infrastructure for IT audits
+• Verify router and firewall configurations
+• Discover devices consuming excessive bandwidth
+
+🔧 TECHNICAL CAPABILITIES
+• Supports IPv4 network scanning protocols
+• Compatible with home routers, enterprise networks, and public hotspots
+• Advanced networking protocols support
+• Optimized performance with minimal battery usage
+• Cross-platform compatibility (Android focus)
+
+Transform your device into a powerful network analysis tool. Download IP Tools : Network Scanner today and take control of your network security and management!
+
+Note: Location permission is required by Android to access WiFi network information. Your location data is never collected, stored, or transmitted by this application.
+
+CATEGORY:
+Tools
+
+CONTENT RATING:
+Teen (ages 13+)
+
+TAGS/KEYWORDS:
+network scanner, IP scanner, port scanner, WiFi analyzer, network tools, device discovery, network security, IT tools, network monitoring, network analysis, WiFi tools, network diagnostics, security scanner, network admin
+
+PRIVACY POLICY URL:
+https://redhun.github.io/ip-tools-privacy-policy/privacy_policy.html
+
+RELEASE NOTES (for first version):
+🎉 Initial Release - IP Tools : Network Scanner v1.0.0
+
+✨ Features:
+• Professional network device discovery and analysis
+• Comprehensive port scanning with security assessment
+• Detailed device information with connection history
+• Security report generation and easy sharing
+• Network monitoring with real-time status updates
+• Modern dark theme with intuitive navigation
+
+🔒 Privacy & Security:
+• All data processed locally on your device
+• No external data transmission or cloud storage
+• Transparent privacy practices and user control
+
+Perfect for IT professionals, network administrators, security analysts, and anyone interested in understanding and securing their network infrastructure.
+
+===== END OF COPY-PASTE CONTENT =====

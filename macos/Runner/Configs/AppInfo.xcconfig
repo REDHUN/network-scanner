@@ -5,10 +5,10 @@
 // 'flutter create' template.
 
 // The application's name. By default this is also the title of the Flutter window.
-PRODUCT_NAME = netra
+PRODUCT_NAME = IP Tools : Network Scanner
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.example.netra
+PRODUCT_BUNDLE_IDENTIFIER = com.unifydevelopers.iptools
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2025 com.example. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2025 Unify Developers. All rights reserved.

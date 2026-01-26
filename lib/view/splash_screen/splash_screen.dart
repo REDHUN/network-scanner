@@ -125,43 +125,64 @@ class _SplashScreenState extends State<SplashScreen>
 
                                 const SizedBox(height: 40),
 
-                                // App Name
-                                RichText(
-                                  text: const TextSpan(
-                                    children: [
-                                      TextSpan(
-                                        text: 'IP Tools',
+                                // App Name with Improved Typography
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    // Main App Name - "IP Tools"
+                                    ShaderMask(
+                                      shaderCallback: (bounds) =>
+                                          const LinearGradient(
+                                            colors: [
+                                              Color(0xFF2C2C2E),
+                                              Color(0xFF1C1C1E),
+                                            ],
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                          ).createShader(bounds),
+                                      child: const Text(
+                                        'IP TOOLS',
                                         style: TextStyle(
-                                          fontSize: 42,
-                                          fontWeight: FontWeight.w700,
-                                          color: Color(0xFF2C2C2E),
-                                          letterSpacing: -1.0,
+                                          fontSize: 48,
+                                          fontWeight: FontWeight.w800,
+                                          color: Colors.white,
+                                          letterSpacing: -1.5,
+                                          height: 0.9,
                                         ),
                                       ),
-                                      TextSpan(
-                                        text: ' Pro',
-                                        style: TextStyle(
-                                          fontSize: 42,
-                                          fontWeight: FontWeight.w300,
-                                          color: Color(0xFFD4A574),
-                                          letterSpacing: -1.0,
-                                        ),
+                                    ),
+
+                                    const SizedBox(height: 8),
+
+                                    // Subtitle with accent color
+                                    const Text(
+                                      'Network Scanner',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFFD4A574),
+                                        letterSpacing: 0.5,
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
 
-                                const SizedBox(height: 12),
+                                const SizedBox(height: 10),
 
-                                // Tagline
-                                const Text(
-                                  'NETWORK INTELLIGENCE',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
-                                    color: Color(0xFF8E8E93),
-                                    letterSpacing: 2.0,
-                                  ),
+                                // Enhanced Tagline with Icon
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Text(
+                                      'NETWORK INTELLIGENCE',
+                                      style: TextStyle(
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF8E8E93),
+                                        letterSpacing: 2.5,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),

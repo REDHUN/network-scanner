@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:ip_tools/common/utils/snackbar_utils.dart';
 import 'package:ip_tools/models/storage/router_network_data.dart';
 import 'package:ip_tools/viewmodels/scanner_viewmodel/scanner_viewmodel.dart';
 import 'package:provider/provider.dart';
@@ -575,12 +576,7 @@ class _RouterHistoryScreenState extends State<RouterHistoryScreen> {
 
     if (mounted) {
       Navigator.pop(context); // Go back to devices screen
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Switched to network history view'),
-          backgroundColor: const Color(0xFFD4A574),
-        ),
-      );
+      SnackbarUtils.showInfo(context, 'Switched to network history view');
     }
   }
 
@@ -672,15 +668,11 @@ class _RouterHistoryScreenState extends State<RouterHistoryScreen> {
       print('✅ Router list refreshed');
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              isDeletingCurrentRouter
-                  ? 'Current network data deleted successfully'
-                  : 'Network data deleted successfully',
-            ),
-            backgroundColor: Colors.red,
-          ),
+        SnackbarUtils.showSuccess(
+          context,
+          isDeletingCurrentRouter
+              ? 'Current network data deleted successfully'
+              : 'Network data deleted successfully',
         );
 
         // If we deleted the current router, go back to devices screen
@@ -692,12 +684,7 @@ class _RouterHistoryScreenState extends State<RouterHistoryScreen> {
     } catch (e) {
       print('❌ Error in delete process: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to delete network data: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        SnackbarUtils.showError(context, 'Failed to delete network data: $e');
       }
     }
   }

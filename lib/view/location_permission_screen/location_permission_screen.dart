@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ip_tools/common/utils/snackbar_utils.dart';
 import 'package:ip_tools/common/widgets/app_icon.dart';
 import 'package:ip_tools/service/permission_preferences_service/permission_preferences_service.dart';
 import 'package:ip_tools/service/permission_service/permission_service.dart';
@@ -63,29 +64,15 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
         await _loadPermissionStatus();
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text(
-                'Location permission is required for network scanning',
-              ),
-              backgroundColor: Colors.orange,
-              action: SnackBarAction(
-                label: 'Settings',
-                textColor: Colors.white,
-                onPressed: _openSettings,
-              ),
-            ),
+          SnackbarUtils.showWarning(
+            context,
+            'Location permission is required for network scanning',
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error requesting permission: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        SnackbarUtils.showError(context, 'Error requesting permission: $e');
       }
     } finally {
       if (mounted) {

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:ip_tools/common/utils/snackbar_utils.dart';
 import 'package:ip_tools/models/network_model/open_port.dart';
 import 'package:ip_tools/models/network_model/scanned_device.dart';
 import 'package:ip_tools/service/port_scanner_service/port_scanner_service.dart';
@@ -27,6 +29,38 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
+      floatingActionButton: Container(
+        margin: const EdgeInsets.only(bottom: 20),
+        child: FloatingActionButton.extended(
+          onPressed: _shareDeviceInfo,
+          backgroundColor: const Color(0xFFD4A574),
+          foregroundColor: Colors.white,
+          elevation: 8,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          icon: const Icon(Icons.share, size: 20),
+          label: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Share Details',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+              Text(
+                _lastScanResult != null ? 'Security report' : 'Device info',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.white.withValues(alpha: 0.8),
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -64,29 +98,14 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                         ),
                       ),
                     ),
-                    const Spacer(),
-                    Text(
-                      _getDeviceName(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: _shareDeviceInfo,
-                      child: Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.share,
+                    SizedBox(width: 15),
+                    Center(
+                      child: Text(
+                        _getDeviceName(),
+                        style: const TextStyle(
                           color: Colors.white,
-                          size: 24,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
@@ -241,8 +260,47 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                           ),
                           const SizedBox(height: 16),
 
+                          // MAC Address (if available)
+                          if (widget.device.mac != null) ...[
+                            _buildDetailCard(
+                              'MAC ADDRESS',
+                              widget.device.mac!,
+                              Icons.fingerprint,
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+
+                          // Device Name (if available and different from display name)
+                          if (widget.device.name != null &&
+                              widget.device.name !=
+                                  widget.device.displayName) ...[
+                            _buildDetailCard(
+                              'DEVICE NAME',
+                              widget.device.name!,
+                              Icons.label,
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+
+                          // mDNS Name (if available and different from name)
+                          if (widget.device.mdns != null &&
+                              widget.device.mdns != widget.device.name) ...[
+                            _buildDetailCard(
+                              'MDNS NAME',
+                              widget.device.mdns!,
+                              Icons.dns,
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+
+                          const SizedBox(height: 24),
+
                           // Port Scanning Section
                           _buildPortScanSection(),
+
+                          const SizedBox(
+                            height: 80,
+                          ), // Extra bottom padding for FAB
                         ],
                       ),
                     ),
@@ -260,6 +318,19 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
     if (widget.device.isGateway) return 'Home Router';
     if (widget.device.isSelf) return 'This Device';
     return widget.device.displayName;
+  }
+
+  Future<void> _copyToClipboard(String value, String label) async {
+    try {
+      await Clipboard.setData(ClipboardData(text: value));
+      if (mounted) {
+        SnackbarUtils.showCopySuccess(context, label);
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackbarUtils.showError(context, 'Failed to copy: ${e.toString()}');
+      }
+    }
   }
 
   Widget _buildDetailCard(String label, String value, IconData icon) {
@@ -317,16 +388,23 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              Icons.copy,
-              color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
-              size: 16,
+          GestureDetector(
+            onTap: () => _copyToClipboard(value, label),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: theme.textTheme.bodyMedium?.color?.withValues(
+                  alpha: 0.1,
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.copy,
+                color: theme.textTheme.bodyMedium?.color?.withValues(
+                  alpha: 0.5,
+                ),
+                size: 16,
+              ),
             ),
           ),
         ],
@@ -457,7 +535,10 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                                 ),
                               ),
                               const SizedBox(width: 12),
-                              Text('Scanning $_scanType...'),
+                              Text(
+                                'Scanning $_scanType...',
+                                style: TextStyle(color: Color(0xFFD4A574)),
+                              ),
                             ],
                           )
                         : Row(
@@ -476,7 +557,10 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                                 ),
                               ),
                               const SizedBox(width: 12),
-                              Text('START $_scanType SCAN'),
+                              Text(
+                                'START $_scanType SCAN',
+                                style: TextStyle(color: Color(0xFFD4A574)),
+                              ),
                             ],
                           ),
                   ),
@@ -782,12 +866,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
     } catch (e) {
       setState(() => _isScanning = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Scan failed: ${e.toString()}'),
-            backgroundColor: const Color(0xFFFF3B30),
-          ),
-        );
+        SnackbarUtils.showError(context, 'Scan failed: ${e.toString()}');
       }
     }
   }
@@ -1154,47 +1233,13 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
 
   void _showShareSuccessMessage(String message) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD4A574),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Icon(
-                  Icons.check_circle,
-                  color: Color(0xFF2C2C2E),
-                  size: 16,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(message),
-            ],
-          ),
-          backgroundColor: const Color(0xFF2C2C2E),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-      );
+      SnackbarUtils.showSuccess(context, message);
     }
   }
 
   void _showShareErrorMessage(String message) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: const Color(0xFFFF3B30),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          duration: const Duration(seconds: 4),
-        ),
-      );
+      SnackbarUtils.showError(context, message);
     }
   }
 }

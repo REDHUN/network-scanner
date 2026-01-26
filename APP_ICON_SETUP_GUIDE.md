@@ -1,4 +1,4 @@
-# Complete App Icon Setup Guide for Jaal Network Scanner
+# Complete App Icon Setup Guide for IP Tools : Network Scanner
 
 ## ✅ What's Already Done
 
