@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:ip_tools/common/widgets/app_icon.dart';
 import 'package:ip_tools/service/network_connectivity_service/network_connectivity_service.dart';
 
 class WiFiConnectionScreen extends StatefulWidget {
@@ -11,29 +10,14 @@ class WiFiConnectionScreen extends StatefulWidget {
   State<WiFiConnectionScreen> createState() => _WiFiConnectionScreenState();
 }
 
-class _WiFiConnectionScreenState extends State<WiFiConnectionScreen>
-    with TickerProviderStateMixin {
+class _WiFiConnectionScreenState extends State<WiFiConnectionScreen> {
   final ConnectivityService _connectivityService = ConnectivityService();
   bool _isCheckingConnection = false;
-  late AnimationController _pulseController;
-  late Animation<double> _pulseAnimation;
 
   @override
   void initState() {
     super.initState();
-    _setupAnimations();
     _startListeningForWiFi();
-  }
-
-  void _setupAnimations() {
-    _pulseController = AnimationController(
-      duration: const Duration(seconds: 2),
-      vsync: this,
-    );
-    _pulseAnimation = Tween<double>(begin: 0.8, end: 1.2).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
-    _pulseController.repeat(reverse: true);
   }
 
   void _startListeningForWiFi() {
@@ -290,300 +274,256 @@ class _WiFiConnectionScreenState extends State<WiFiConnectionScreen>
 
   @override
   void dispose() {
-    _pulseController.dispose();
     super.dispose();
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Theme.of(context).scaffoldBackgroundColor,
-              Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.8),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+      backgroundColor: const Color(0xFFF9FAFB), // Light off-white background
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Custom App Bar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Stack(
+                alignment: Alignment.center,
                 children: [
-                  // Animated WiFi Icon
-                  AnimatedBuilder(
-                    animation: _pulseAnimation,
-                    builder: (context, child) {
-                      return Transform.scale(
-                        scale: _pulseAnimation.value,
-                        child: Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [Color(0xFF2C2C2E), Color(0xFF1C1C1E)],
-                            ),
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.3),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.wifi_off,
-                            color: Color(0xFFD4A574),
-                            size: 60,
-                          ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: GestureDetector(
+                      onTap: () {
+                        // Depending on routing, might want to pop or handle differently
+                        if (Navigator.canPop(context)) {
+                          Navigator.pop(context);
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFF3F4F6),
+                          shape: BoxShape.circle,
                         ),
-                      );
-                    },
+                        child: const Icon(
+                          Icons.arrow_back,
+                          color: Color(0xFF1F2937),
+                          size: 20,
+                        ),
+                      ),
+                    ),
                   ),
-              
-                  const SizedBox(height: 40),
-              
-                  // App Icon and Title
-                  const AppIcon(size: 60, showStatusIndicator: false),
-                  const SizedBox(height: 20),
-              
-                  Text(
-                    'IP Tools : Network Scanner',
+                  const Text(
+                    'Network Scanner',
                     style: TextStyle(
-                      fontSize: 24,
+                      fontSize: 18,
                       fontWeight: FontWeight.w700,
-                      color: Theme.of(context).textTheme.headlineLarge?.color,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-              
-                  const SizedBox(height: 8),
-              
-                  Text(
-                    'NETWORK INTELLIGENCE',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-              
-                  const SizedBox(height: 40),
-              
-                  // Main Message
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).cardTheme.color,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.wifi_outlined,
-                          color: const Color(0xFFD4A574),
-                          size: 48,
-                        ),
-                        const SizedBox(height: 16),
-              
-                        Text(
-                          'WiFi Connection Required',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: Theme.of(
-                              context,
-                            ).textTheme.headlineLarge?.color,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-              
-                        const SizedBox(height: 12),
-              
-                        Text(
-                          'To scan and analyze your network, please connect to a WiFi network. The app will automatically detect when you\'re connected.',
-                          style: TextStyle(
-                            fontSize: 16,
-                            height: 1.5,
-                            color: Theme.of(
-                              context,
-                            ).textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
-              
-                  const SizedBox(height: 32),
-              
-                  // Action Buttons
-                  Column(
-                    children: [
-                      // Check Connection Button
-                      SizedBox(
-                        width: double.infinity,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF2C2C2E), Color(0xFF1C1C1E)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: ElevatedButton(
-                            onPressed: _isCheckingConnection
-                                ? null
-                                : _checkConnection,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              foregroundColor: Colors.white,
-                              shadowColor: Colors.transparent,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              elevation: 0,
-                            ),
-                            child: _isCheckingConnection
-                                ? Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                Color(0xFFD4A574),
-                                              ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      const Text('Checking Connection...'),
-                                    ],
-                                  )
-                                : Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(6),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFD4A574),
-                                          borderRadius: BorderRadius.circular(6),
-                                        ),
-                                        child: const Icon(
-                                          Icons.refresh,
-                                          color: Color(0xFF2C2C2E),
-                                          size: 16,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      const Text('CHECK CONNECTION'),
-                                    ],
-                                  ),
-                          ),
-                        ),
-                      ),
-              
-                      const SizedBox(height: 16),
-              
-                      // WiFi Settings Button
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton(
-                          onPressed: _openWiFiSettings,
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFFD4A574),
-                            side: const BorderSide(
-                              color: Color(0xFFD4A574),
-                              width: 2,
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.settings, size: 20),
-                              const SizedBox(width: 12),
-                              const Text(
-                                'HOW TO CONNECT',
-                                style: TextStyle(fontWeight: FontWeight.w600),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-              
-                  const SizedBox(height: 32),
-              
-                  // Status Indicator
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: Colors.orange.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Colors.orange,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'WAITING FOR WIFI CONNECTION',
-                          style: TextStyle(
-                            color: Colors.orange,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
+                      color: Color(0xFF111827),
+                      letterSpacing: -0.3,
                     ),
                   ),
                 ],
               ),
             ),
-          ),
+
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 40),
+
+                    // Main Icon Container
+                    Container(
+                      width: 200,
+                      height: 240,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(32),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(
+                              0xFF656CEB,
+                            ).withValues(alpha: 0.05),
+                            blurRadius: 40,
+                            offset: const Offset(0, 10),
+                            spreadRadius: 10,
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 100,
+                            height: 100,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFEEEDFF),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.wifi_off_rounded,
+                                color: Color(0xFF656CEB),
+                                size: 50,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          // 3 small dots
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFE5E7EB),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFF656CEB,
+                                  ).withValues(alpha: 0.2),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFE5E7EB),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 48),
+
+                    // Headings
+                    const Text(
+                      'WiFi Connection Required',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF111827),
+                        letterSpacing: -0.5,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        'To scan your network and discover nearby devices, please connect your device to a local WiFi network.',
+                        style: TextStyle(
+                          fontSize: 15,
+                          height: 1.5,
+                          color: Color(0xFF6B7280),
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+
+                    const SizedBox(height: 48),
+
+                    // Action Buttons
+                    Column(
+                      children: [
+                        // Primary Check Connection Button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: ElevatedButton(
+                            onPressed: _isCheckingConnection
+                                ? null
+                                : _checkConnection,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF656CEB),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(28),
+                              ),
+                            ),
+                            child: _isCheckingConnection
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                : const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.refresh, size: 20),
+                                      SizedBox(width: 10),
+                                      Text(
+                                        'Check Connection',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Secondary How to Connect Button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: ElevatedButton(
+                            onPressed: _openWiFiSettings,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(
+                                0xFFF3F4F6,
+                              ), // Using F3F4F6 as grey matching the image
+                              foregroundColor: const Color(0xFF1F2937),
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(28),
+                              ),
+                            ),
+                            child: const Text(
+                              'How to Connect',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF111827),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 40),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

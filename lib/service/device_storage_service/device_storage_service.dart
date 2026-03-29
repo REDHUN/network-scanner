@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:ip_tools/models/network_model/network_info_model.dart';
+import 'package:ip_tools/models/network_model/open_port.dart';
 import 'package:ip_tools/models/network_model/scanned_device.dart';
 import 'package:ip_tools/models/storage/router_network_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -198,6 +199,31 @@ class DeviceStorageService {
       );
     } catch (e) {
       log('Error saving device data: $e');
+    }
+  }
+
+  /// Save port scan result for a specific device in current router
+  Future<void> savePortScanResult(String ip, PortScanResult result) async {
+    try {
+      final currentRouterId = await getCurrentRouterId();
+      if (currentRouterId == null) return;
+
+      final allData = await _getAllRouterData();
+      final routerData = allData[currentRouterId];
+      if (routerData == null) return;
+
+      final devices = List<StoredDevice>.from(routerData.devices);
+      final index = devices.indexWhere((d) => d.ip == ip);
+
+      if (index != -1) {
+        devices[index] = devices[index].copyWith(portScanResult: result);
+        final updatedData = routerData.copyWith(devices: devices);
+        allData[currentRouterId] = updatedData;
+        await _saveAllRouterData(allData);
+        log('Saved port scan result for device $ip');
+      }
+    } catch (e) {
+      log('Error saving port scan result: $e');
     }
   }
 

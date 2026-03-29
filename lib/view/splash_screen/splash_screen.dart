@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:ip_tools/common/widgets/app_icon.dart';
+import 'package:ip_tools/service/network_connectivity_service/network_connectivity_service.dart';
+import 'package:ip_tools/service/permission_manager/permission_manager.dart';
 import 'package:ip_tools/view/app_wrapper/app_wrapper.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -13,11 +14,11 @@ class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
   late AnimationController _fadeController;
   late AnimationController _scaleController;
-  late AnimationController _progressController;
 
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
-  late Animation<double> _progressAnimation;
+
+  final ConnectivityService _connectivityService = ConnectivityService();
 
   @override
   void initState() {
@@ -25,17 +26,12 @@ class _SplashScreenState extends State<SplashScreen>
 
     // Initialize animation controllers
     _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1000), // Speed up fade
       vsync: this,
     );
 
     _scaleController = AnimationController(
-      duration: const Duration(milliseconds: 1200),
-      vsync: this,
-    );
-
-    _progressController = AnimationController(
-      duration: const Duration(milliseconds: 2500),
+      duration: const Duration(milliseconds: 800), // Speed up scale
       vsync: this,
     );
 
@@ -48,35 +44,53 @@ class _SplashScreenState extends State<SplashScreen>
       CurvedAnimation(parent: _scaleController, curve: Curves.elasticOut),
     );
 
-    _progressAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _progressController, curve: Curves.easeInOut),
-    );
-
-    // Start animations
-    _startAnimations();
+    // Start animations and checks
+    _startAnimationsAndChecks();
   }
 
-  void _startAnimations() async {
+  Future<void> _startAnimationsAndChecks() async {
     // Start fade and scale animations
     _fadeController.forward();
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future.delayed(const Duration(milliseconds: 100));
     _scaleController.forward();
 
-    // Start progress animation
-    await Future.delayed(const Duration(milliseconds: 800));
-    _progressController.forward();
+    // Perform checks and wait for at least the splash duration
+    bool isWiFiConnected = false;
+    bool shouldShowPermissionScreen = false;
 
-    // Navigate to main screen after total delay
-    await Future.delayed(const Duration(milliseconds: 3500));
+    // Run the initialization logic and the minimum splash duration concurrently
+    await Future.wait([
+      Future.delayed(const Duration(milliseconds: 1800)),
+      () async {
+        try {
+          // Check WiFi (with a 5 second timeout)
+          isWiFiConnected = await _connectivityService
+              .isWifiConnected()
+              .timeout(
+                const Duration(seconds: 5),
+                onTimeout: () => true, // Default to true if timeout
+              );
+
+          // If WiFi is connected, check permissions
+          if (isWiFiConnected) {
+            shouldShowPermissionScreen =
+                await PermissionManager.shouldShowLocationPermissionScreen();
+          }
+        } catch (e) {
+          // On error, default to true for WiFi to allow proceeding
+          isWiFiConnected = true;
+          shouldShowPermissionScreen = false;
+        }
+      }(),
+    ]);
+
     if (mounted) {
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              const AppWrapper(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-          transitionDuration: const Duration(milliseconds: 500),
+          pageBuilder: (context, animation, secondaryAnimation) => AppWrapper(
+            initialIsWiFiConnected: isWiFiConnected,
+            initialShouldShowPermissionScreen: shouldShowPermissionScreen,
+          ),
         ),
       );
     }
@@ -86,7 +100,6 @@ class _SplashScreenState extends State<SplashScreen>
   void dispose() {
     _fadeController.dispose();
     _scaleController.dispose();
-    _progressController.dispose();
     super.dispose();
   }
 
@@ -96,7 +109,7 @@ class _SplashScreenState extends State<SplashScreen>
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        color: const Color(0xFFF5F1EB), // Warm beige background
+        color: const Color(0xFFF8F9FA), // Soft light background like the image
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -117,72 +130,75 @@ class _SplashScreenState extends State<SplashScreen>
                             scale: _scaleAnimation.value,
                             child: Column(
                               children: [
-                                // App Icon
-                                const AppIcon(
-                                  size: 120,
-                                  showStatusIndicator: true,
+                                // Icon with rounded background
+                                Container(
+                                  width: 100,
+                                  height: 100,
+                                  decoration: BoxDecoration(
+                                    color: const Color(
+                                      0xFFEEEEF8,
+                                    ), // Light blueish background
+                                    borderRadius: BorderRadius.circular(24),
+                                    border: Border.all(
+                                      color: const Color(0xFFDEDEF2),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons
+                                          .account_tree_rounded, // Approximate icon
+                                      size: 60,
+                                      color: Color(
+                                        0xFF656CEB,
+                                      ), // Icon color from image
+                                    ),
+                                  ),
                                 ),
 
-                                const SizedBox(height: 40),
+                                const SizedBox(height: 32),
 
-                                // App Name with Improved Typography
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                // App Name Parts inline
+                                Wrap(
+                                  alignment: WrapAlignment.center,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
                                   children: [
-                                    // Main App Name - "IP Tools"
-                                    ShaderMask(
-                                      shaderCallback: (bounds) =>
-                                          const LinearGradient(
-                                            colors: [
-                                              Color(0xFF2C2C2E),
-                                              Color(0xFF1C1C1E),
-                                            ],
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                          ).createShader(bounds),
-                                      child: const Text(
-                                        'IP TOOLS',
-                                        style: TextStyle(
-                                          fontSize: 48,
-                                          fontWeight: FontWeight.w800,
-                                          color: Colors.white,
-                                          letterSpacing: -1.5,
-                                          height: 0.9,
-                                        ),
+                                    const Text(
+                                      'IP TOOLS: ',
+                                      style: TextStyle(
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.w800,
+                                        color: Color(0xFF1C1C1E),
+                                        letterSpacing: -0.5,
                                       ),
                                     ),
-
-                                    const SizedBox(height: 8),
-
-                                    // Subtitle with accent color
                                     const Text(
-                                      'Network Scanner',
+                                      'Network\nScanner',
+                                      textAlign: TextAlign.center,
                                       style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xFFD4A574),
-                                        letterSpacing: 0.5,
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.w800,
+                                        color: Color(
+                                          0xFF656CEB,
+                                        ), // Match button/icon color
+                                        letterSpacing: -0.5,
+                                        height: 1.1,
                                       ),
                                     ),
                                   ],
                                 ),
 
-                                const SizedBox(height: 10),
+                                const SizedBox(height: 16),
 
-                                // Enhanced Tagline with Icon
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Text(
-                                      'NETWORK INTELLIGENCE',
-                                      style: TextStyle(
-                                        fontSize: 8,
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xFF8E8E93),
-                                        letterSpacing: 2.5,
-                                      ),
-                                    ),
-                                  ],
+                                // Enhanced Tagline
+                                const Text(
+                                  'NETWORK INTELLIGENCE',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF6B7280), // Slate gray
+                                    letterSpacing: 1.5,
+                                  ),
                                 ),
                               ],
                             ),
@@ -195,48 +211,23 @@ class _SplashScreenState extends State<SplashScreen>
 
                 const Spacer(flex: 4),
 
-                // Loading Section
+                // Bottom Section (just version now)
                 AnimatedBuilder(
-                  animation: _progressAnimation,
+                  animation: _fadeAnimation,
                   builder: (context, child) {
                     return FadeTransition(
                       opacity: _fadeAnimation,
                       child: Column(
                         children: [
-                          // Progress Bar
-                          Container(
-                            width: 200,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE8E5E0),
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                            child: Stack(
-                              children: [
-                                Container(
-                                  width: 200 * _progressAnimation.value,
-                                  height: 4,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF2C2C2E),
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          // Loading Text
+                          // Version tag
                           Text(
-                            'Initializing protocols... v1.0.0',
+                            'v1.0.0',
                             style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w400,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
                               color: const Color(
-                                0xFF8E8E93,
-                              ).withValues(alpha: 0.8),
-                              letterSpacing: 0.3,
+                                0xFF6B7280,
+                              ).withValues(alpha: 0.7),
                             ),
                           ),
                         ],
@@ -245,7 +236,7 @@ class _SplashScreenState extends State<SplashScreen>
                   },
                 ),
 
-                const SizedBox(height: 80),
+                const SizedBox(height: 48),
               ],
             ),
           ),

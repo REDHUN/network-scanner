@@ -1,10 +1,13 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:ip_tools/service/network_connectivity_service/network_connectivity_service.dart';
+import 'package:ip_tools/service/permission_manager/permission_manager.dart';
 import 'package:ip_tools/view/devices_screen/devices_screen.dart';
 import 'package:ip_tools/view/homescreen/homescreen.dart';
-import 'package:ip_tools/view/settings_screen/settings_screen.dart';
+import 'package:ip_tools/view/router_history_screen/router_history_screen.dart';
 import 'package:ip_tools/view/wifi_connection_screen/wifi_connection_screen.dart';
+import 'package:ip_tools/viewmodels/network_viewmodel/network_viewmodel.dart';
 import 'package:ip_tools/viewmodels/scanner_viewmodel/scanner_viewmodel.dart';
 import 'package:provider/provider.dart';
 
@@ -12,22 +15,192 @@ class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
 
   @override
-  State<MainNavigation> createState() => _MainNavigationState();
+  State<MainNavigation> createState() => MainNavigationState();
 }
 
-class _MainNavigationState extends State<MainNavigation> {
+class MainNavigationState extends State<MainNavigation>
+    with WidgetsBindingObserver {
   final ConnectivityService _connectivityService = ConnectivityService();
   int _currentIndex = 0;
   bool _isWiFiConnected = true;
   StreamSubscription<bool>? _wifiSubscription;
+  bool _autoStartScanOnDevicesScreen = false;
 
-  late final List<Widget> _screens;
+  List<Widget> get _screens => [
+    const Homescreen(),
+    DevicesScreen(autoStartScan: _autoStartScanOnDevicesScreen),
+    const RouterHistoryScreen(),
+  ];
 
   @override
   void initState() {
     super.initState();
-    _screens = [Homescreen(), const DevicesScreen(), const SettingsScreen()];
+    WidgetsBinding.instance.addObserver(this);
+
     _startWiFiMonitoring();
+
+    // Initialize network information globally when the app loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final networkVM = Provider.of<NetworkViewModel>(context, listen: false);
+      final scannerVM = Provider.of<NetworkScannerProvider>(
+        context,
+        listen: false,
+      );
+
+      networkVM.loadNetworkInfo().then((_) async {
+        if (networkVM.networkInfo != null) {
+          await scannerVM.initializeWithNetworkInfo(networkVM.networkInfo!);
+          if (scannerVM.hasRouterChanged && mounted) {
+            _showNewNetworkPrompt();
+          }
+        }
+      });
+      networkVM.startNetworkMonitoring();
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    // When app resumes from background (e.g., returning from settings)
+    if (state == AppLifecycleState.resumed) {
+      final networkVM = Provider.of<NetworkViewModel>(context, listen: false);
+      // Small delay to ensure system has updated permissions/settings
+      Future.delayed(const Duration(milliseconds: 500), () {
+        networkVM.loadNetworkInfo();
+      });
+    }
+  }
+
+  void _showNewNetworkPrompt() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEEEDFF),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.wifi_find,
+                    color: Color(0xFF656CEB),
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'New Network Detected',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF1F2937),
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'You have connected to a new WiFi network. Would you like to scan it now to discover connected devices?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF6B7280),
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text(
+                          'Later',
+                          style: TextStyle(
+                            color: Color(0xFF6B7280),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          Navigator.of(context).pop();
+                          final hasPermission =
+                              await PermissionManager.checkLocationPermissionForFeature(
+                                context,
+                                featureName: 'Network Scanning',
+                              );
+
+                          if (hasPermission && mounted) {
+                            // Go to devices screen index to trigger an auto scan
+                            setState(() {
+                              _autoStartScanOnDevicesScreen = true;
+                            });
+                            switchTab(1); // 1 is Devices tab
+
+                            // Reset flag after a short delay so manual navigation later doesn't auto-scan
+                            Future.delayed(
+                              const Duration(milliseconds: 500),
+                              () {
+                                if (mounted) {
+                                  _autoStartScanOnDevicesScreen = false;
+                                }
+                              },
+                            );
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF656CEB),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text(
+                          'Scan Now',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _startWiFiMonitoring() {
@@ -40,6 +213,18 @@ class _MainNavigationState extends State<MainNavigation> {
         });
       }
     });
+  }
+
+  void switchTab(int index) {
+    if (mounted) {
+      if (index == 0) {
+        final scannerVM = context.read<NetworkScannerProvider>();
+        if (scannerVM.state == ScanState.done) {
+          scannerVM.resetScan();
+        }
+      }
+      setState(() => _currentIndex = index);
+    }
   }
 
   void _onWiFiReconnected() {
@@ -78,6 +263,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _wifiSubscription?.cancel();
     super.dispose();
   }
@@ -93,14 +279,13 @@ class _MainNavigationState extends State<MainNavigation> {
       body: _screens[_currentIndex],
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
+          color: Colors.white,
+          border: Border(
+            top: BorderSide(
+              color: Colors.grey.withValues(alpha: 0.1),
+              width: 1,
             ),
-          ],
+          ),
         ),
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
@@ -117,30 +302,48 @@ class _MainNavigationState extends State<MainNavigation> {
             }
           },
           type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.transparent,
+          backgroundColor: Colors.white,
           elevation: 0,
-          selectedItemColor: Theme.of(context).colorScheme.primary,
-          unselectedItemColor: Colors.black,
+          selectedItemColor: const Color(0xFF656CEB),
+          unselectedItemColor: const Color(0xFF9CA3AF),
           selectedLabelStyle: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.5,
           ),
           unselectedLabelStyle: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: Colors.black,
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.5,
           ),
-          unselectedIconTheme: IconThemeData(color: Colors.black),
           items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-
             BottomNavigationBarItem(
-              icon: Icon(Icons.devices),
-              label: 'Devices',
+              icon: Padding(
+                padding: EdgeInsets.only(bottom: 4),
+                child: Icon(Icons.dashboard),
+              ),
+              label: 'DASHBOARD',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.settings),
-              label: 'Settings',
+              icon: Padding(
+                padding: EdgeInsets.only(bottom: 4),
+                child: Icon(Icons.devices_other),
+              ),
+              label: 'DEVICES',
+            ),
+            // BottomNavigationBarItem(
+            //   icon: Padding(
+            //     padding: EdgeInsets.only(bottom: 4),
+            //     child: Icon(Icons.settings),
+            //   ),
+            //   label: 'SETTINGS',
+            // ),
+            BottomNavigationBarItem(
+              icon: Padding(
+                padding: EdgeInsets.only(bottom: 4),
+                child: Icon(Icons.history),
+              ),
+              label: 'HISTORY',
             ),
           ],
         ),

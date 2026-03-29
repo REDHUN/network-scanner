@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ip_tools/common/utils/snackbar_utils.dart';
-import 'package:ip_tools/common/widgets/app_icon.dart';
 import 'package:ip_tools/service/permission_manager/permission_manager.dart';
 import 'package:ip_tools/service/permission_preferences_service/permission_preferences_service.dart';
 import 'package:ip_tools/viewmodels/theme_viewmodel/theme_viewmodel.dart';
@@ -32,7 +31,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Row(
                 children: [
                   // App Icon
-                  const AppIcon(size: 44, showStatusIndicator: false),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Text(
@@ -473,8 +471,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   child: Column(
                     children: [
-                      const AppIcon(size: 60, showStatusIndicator: false),
-                      const SizedBox(height: 16),
                       const Text(
                         'IP Tools : Network Scanner',
                         style: TextStyle(

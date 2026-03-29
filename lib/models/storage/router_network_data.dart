@@ -1,3 +1,4 @@
+import 'package:ip_tools/models/network_model/open_port.dart';
 import 'package:ip_tools/models/network_model/scanned_device.dart';
 
 class RouterNetworkData {
@@ -72,6 +73,7 @@ class StoredDevice {
   final DateTime firstSeen;
   final DateTime lastSeen;
   final bool isOnline;
+  final PortScanResult? portScanResult;
 
   const StoredDevice({
     required this.ip,
@@ -83,6 +85,7 @@ class StoredDevice {
     required this.firstSeen,
     required this.lastSeen,
     this.isOnline = true,
+    this.portScanResult,
   });
 
   Map<String, dynamic> toJson() {
@@ -96,6 +99,7 @@ class StoredDevice {
       'firstSeen': firstSeen.millisecondsSinceEpoch,
       'lastSeen': lastSeen.millisecondsSinceEpoch,
       'isOnline': isOnline,
+      'portScanResult': portScanResult?.toJson(),
     };
   }
 
@@ -110,6 +114,11 @@ class StoredDevice {
       firstSeen: DateTime.fromMillisecondsSinceEpoch(json['firstSeen'] as int),
       lastSeen: DateTime.fromMillisecondsSinceEpoch(json['lastSeen'] as int),
       isOnline: json['isOnline'] as bool? ?? true,
+      portScanResult: json['portScanResult'] != null
+          ? PortScanResult.fromJson(
+              json['portScanResult'] as Map<String, dynamic>,
+            )
+          : null,
     );
   }
 
@@ -128,6 +137,7 @@ class StoredDevice {
       firstSeen: now,
       lastSeen: now,
       isOnline: true,
+      portScanResult: null,
     );
   }
 
@@ -152,6 +162,7 @@ class StoredDevice {
     DateTime? firstSeen,
     DateTime? lastSeen,
     bool? isOnline,
+    PortScanResult? portScanResult,
   }) {
     return StoredDevice(
       ip: ip ?? this.ip,
@@ -163,6 +174,7 @@ class StoredDevice {
       firstSeen: firstSeen ?? this.firstSeen,
       lastSeen: lastSeen ?? this.lastSeen,
       isOnline: isOnline ?? this.isOnline,
+      portScanResult: portScanResult ?? this.portScanResult,
     );
   }
 

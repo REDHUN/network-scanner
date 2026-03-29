@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:ip_tools/common/utils/snackbar_utils.dart';
-import 'package:ip_tools/common/widgets/app_icon.dart';
 import 'package:ip_tools/service/permission_preferences_service/permission_preferences_service.dart';
 import 'package:ip_tools/service/permission_service/permission_service.dart';
 
@@ -25,7 +24,6 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
 
   bool _isLoading = false;
   bool _dontShowAgain = false;
-  String _permissionStatus = '';
 
   @override
   void initState() {
@@ -34,10 +32,8 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
   }
 
   Future<void> _loadPermissionStatus() async {
-    final status = await _permissionService.getLocationPermissionStatusString();
-    setState(() {
-      _permissionStatus = status;
-    });
+    // Keep this method if any future initialization requires it, or just empty it out
+    // Since we aren\'t displaying status anymore, we just don't set state
   }
 
   Future<void> _requestPermission() async {
@@ -89,10 +85,6 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
     }
   }
 
-  Future<void> _openSettings() async {
-    await _permissionService.openSettings();
-  }
-
   void _skip() async {
     if (_dontShowAgain) {
       await _preferencesService.setDontShowLocationWarning(true);
@@ -129,120 +121,115 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
             child: IntrinsicHeight(
               child: Column(
                 children: [
-                  const SizedBox(height: 32),
+                  // App Bar / Back Button area (if applicable, though usually Scaffold app bar handles it)
+                  // Let's add a custom top area
+                  // Align(
+                  //   alignment: Alignment.centerLeft,
+                  //   child: IconButton(
+                  //     icon: const Icon(Icons.arrow_back),
+                  //     onPressed: () => Navigator.of(context).pop(),
+                  //     padding: EdgeInsets.zero,
+                  //     constraints: const BoxConstraints(),
+                  //   ),
+                  // ),
 
-                  // App Icon
-                  const AppIcon(size: 100, showStatusIndicator: false),
-
-                  const SizedBox(height: 32),
-
-                  // Title
-                  Text(
-                    'Location Permission Required',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      color: Theme.of(context).textTheme.headlineLarge?.color,
+                  // Center title next to back button? Actually the design shows them inline
+                  // Let's build a custom header
+                  Transform.translate(
+                    offset: const Offset(
+                      0,
+                      -24,
+                    ), // Adjust to align with back button
+                    child: const Center(
+                      child: Text(
+                        'Location Access',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
                     ),
-                    textAlign: TextAlign.center,
                   ),
 
                   const SizedBox(height: 16),
 
+                  // Top Map Image
+                  // Container(
+                  //   width: double.infinity,
+                  //   height: 200,
+                  //   decoration: BoxDecoration(
+                  //     borderRadius: BorderRadius.circular(24),
+                  //     image: const DecorationImage(
+                  //       image: AssetImage(
+                  //         'assets/images/map_placeholder.jpg',
+                  //       ), // Ensure this exists or use a network image for now
+                  //       fit: BoxFit.cover,
+                  //     ),
+                  //   ),
+                  // ),
+                  const SizedBox(height: 24),
+
+                  // Title
+                  Text(
+                    'Enable Location\nPermission',
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                      color:
+                          Theme.of(context).textTheme.headlineLarge?.color ??
+                          const Color(0xFF1C1C1E),
+                      height: 1.2,
+                      letterSpacing: -0.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+
+                  const SizedBox(height: 12),
+
                   // Description
                   Text(
-                    'IP Tools needs location permission to scan for devices on your WiFi network. This permission is required by Android to access network information.',
+                    'To provide accurate network analysis\nand device discovery, we need access\nto your location data.',
                     style: TextStyle(
-                      fontSize: 16,
-                      color: Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
+                      fontSize: 15,
+                      color:
+                          Theme.of(context).textTheme.bodyMedium?.color
+                              ?.withValues(alpha: 0.7) ??
+                          const Color(0xFF6B7280),
                       height: 1.5,
                     ),
                     textAlign: TextAlign.center,
                   ),
 
-                  const SizedBox(height: 24),
-
-                  // Permission Status
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: _getStatusColor().withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: _getStatusColor().withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          _getStatusIcon(),
-                          color: _getStatusColor(),
-                          size: 20,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Current Status',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: _getStatusColor(),
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                _permissionStatus,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: _getStatusColor(),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
                   const SizedBox(height: 32),
 
                   // Features that require permission
-                  _buildFeatureList(),
-
-                  const Spacer(),
-
-                  // Don't show again checkbox
-                  Row(
-                    children: [
-                      Checkbox(
-                        value: _dontShowAgain,
-                        onChanged: (value) {
-                          setState(() {
-                            _dontShowAgain = value ?? false;
-                          });
-                        },
-                        activeColor: const Color(0xFFD4A574),
-                      ),
-                      Expanded(
-                        child: Text(
-                          'Don\'t show this again',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Theme.of(context).textTheme.bodyMedium?.color
-                                ?.withValues(alpha: 0.7),
-                          ),
-                        ),
-                      ),
-                    ],
+                  _buildFeatureItem(
+                    Icons.radar,
+                    'Network Discovery',
+                    'Find and identify local network\ninfrastructure automatically.',
+                    const Color(0xFFE5E7FA),
+                    const Color(0xFF656CEB),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildFeatureItem(
+                    Icons.cell_wifi,
+                    'Network Information',
+                    'Access detailed Wi-Fi and\ncellular connectivity data in real-time.',
+                    const Color(0xFFE5E7FA),
+                    const Color(0xFF656CEB),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildFeatureItem(
+                    Icons.devices_other,
+                    'Device Detection',
+                    'Detect and catalog all devices\nconnected to your secure network.',
+                    const Color(0xFFE5E7FA),
+                    const Color(0xFF656CEB),
                   ),
 
-                  const SizedBox(height: 24),
+                  const Spacer(),
+                  const SizedBox(height: 32),
 
                   // Action buttons
                   Column(
@@ -253,11 +240,11 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
                         child: ElevatedButton(
                           onPressed: _isLoading ? null : _requestPermission,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFD4A574),
+                            backgroundColor: const Color(0xFF656CEB),
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            padding: const EdgeInsets.symmetric(vertical: 18),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(16),
                             ),
                             elevation: 0,
                           ),
@@ -276,13 +263,13 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
                                   'Grant Permission',
                                   style: TextStyle(
                                     fontSize: 16,
-                                    fontWeight: FontWeight.w600,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                         ),
                       ),
 
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
 
                       // Skip button
                       SizedBox(
@@ -292,65 +279,38 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
                           style: TextButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(16),
                             ),
                           ),
                           child: Text(
                             'Skip for Now',
                             style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.color
-                                  ?.withValues(alpha: 0.7),
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color:
+                                  Theme.of(context).textTheme.bodyMedium?.color
+                                      ?.withValues(alpha: 0.6) ??
+                                  const Color(0xFF6B7280),
                             ),
                           ),
                         ),
                       ),
 
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 16),
 
-                      // Settings button (if permanently denied)
-                      FutureBuilder<bool>(
-                        future: _permissionService
-                            .isLocationPermissionPermanentlyDenied(),
-                        builder: (context, snapshot) {
-                          if (snapshot.data == true) {
-                            return SizedBox(
-                              width: double.infinity,
-                              child: OutlinedButton(
-                                onPressed: _openSettings,
-                                style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  side: const BorderSide(
-                                    color: Color(0xFFD4A574),
-                                  ),
-                                ),
-                                child: const Text(
-                                  'Open Settings',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    color: Color(0xFFD4A574),
-                                  ),
-                                ),
-                              ),
-                            );
-                          }
-                          return const SizedBox.shrink();
-                        },
+                      Text(
+                        'You can change this anytime in your system settings.\nWe respect your privacy.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color:
+                              Theme.of(context).textTheme.bodyMedium?.color
+                                  ?.withValues(alpha: 0.5) ??
+                              const Color(0xFF9CA3AF),
+                        ),
                       ),
                     ],
                   ),
-
-                  const SizedBox(height: 24),
                 ],
               ),
             ),
@@ -360,122 +320,75 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
     );
   }
 
-  Widget _buildFeatureList() {
+  // We replaced the entire list with individual cards
+  Widget _buildFeatureItem(
+    IconData icon,
+    String title,
+    String description,
+    Color iconBgColor,
+    Color iconColor,
+  ) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color,
+        color: Theme.of(context).cardTheme.color ?? Colors.white,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.05),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
-            offset: const Offset(0, 2),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Features requiring location permission:',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).textTheme.headlineLarge?.color,
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: iconBgColor,
+              shape: BoxShape.circle,
             ),
+            child: Icon(icon, color: iconColor, size: 24),
           ),
-          const SizedBox(height: 16),
-          _buildFeatureItem(
-            Icons.wifi_find,
-            'Network Discovery',
-            'Scan for devices on your WiFi network',
-          ),
-          const SizedBox(height: 12),
-          _buildFeatureItem(
-            Icons.router,
-            'Network Information',
-            'Access WiFi name, IP address, and gateway',
-          ),
-          const SizedBox(height: 12),
-          _buildFeatureItem(
-            Icons.devices,
-            'Device Detection',
-            'Find and identify connected devices',
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color:
+                        Theme.of(context).textTheme.headlineLarge?.color ??
+                        const Color(0xFF1C1C1E),
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 13,
+                    height: 1.4,
+                    color:
+                        Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.color?.withValues(alpha: 0.7) ??
+                        const Color(0xFF6B7280),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
-  }
-
-  Widget _buildFeatureItem(IconData icon, String title, String description) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: const Color(0xFFD4A574).withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, color: const Color(0xFFD4A574), size: 20),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Theme.of(context).textTheme.headlineLarge?.color,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                description,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Color _getStatusColor() {
-    switch (_permissionStatus.toLowerCase()) {
-      case 'granted':
-        return const Color(0xFF30A46C);
-      case 'denied':
-      case 'permanently denied':
-        return Colors.red;
-      case 'restricted':
-      case 'limited':
-        return Colors.orange;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  IconData _getStatusIcon() {
-    switch (_permissionStatus.toLowerCase()) {
-      case 'granted':
-        return Icons.check_circle;
-      case 'denied':
-      case 'permanently denied':
-        return Icons.cancel;
-      case 'restricted':
-      case 'limited':
-        return Icons.warning;
-      default:
-        return Icons.help;
-    }
   }
 }
