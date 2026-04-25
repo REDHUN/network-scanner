@@ -1,42 +1,45 @@
-# The next line is used for managing settings in Flutter.
-# It can apply to multiple targets in the same project.
+# Flutter Podfile (Clean Version)
+
+# Get Flutter root from Generated.xcconfig
 def flutter_root
-  generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
-  unless File.exist?(generated_xcode_build_settings_path)
-    raise "#{generated_xcode_build_settings_path} must exist. If you're running pod install manually, make sure flutter pub get is executed first"
+  config_path = File.expand_path('../Flutter/Generated.xcconfig', __FILE__)
+
+  unless File.exist?(config_path)
+    raise "#{config_path} must exist. Run 'flutter pub get' first"
   end
 
-  File.foreach(generated_xcode_build_settings_path) do |line|
-    matches = line.match(/\AFLUTTER_ROOT=(.*)\z/)
-    return matches[1] if matches
+  File.foreach(config_path) do |line|
+    match = line.match(/^FLUTTER_ROOT=(.*)$/)
+    return match[1].strip if match
   end
-  raise "FLUTTER_ROOT not found in #{generated_xcode_build_settings_path}. Try deleting Generated.xcconfig, then run flutter pub get"
+
+  raise "FLUTTER_ROOT not found in #{config_path}. Delete Generated.xcconfig and run 'flutter pub get'"
 end
 
-require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
+require File.expand_path('packages/flutter_tools/bin/podhelper', flutter_root)
 
+# iOS platform version
 platform :ios, '12.0'
 
-# CocoaPods analytics sends network stats to help improve the tool.
-# Without this, it might hang in CI environments.
-install! 'cocoapods', :deterministic_uuids => false
+# Disable analytics for faster CI
+install! 'cocoapods', deterministic_uuids: false
 
 target 'Runner' do
   use_frameworks!
   use_modular_headers!
 
-  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+  flutter_install_all_ios_pods(File.dirname(File.realpath(__FILE__)))
 end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
-    
+
     target.build_configurations.each do |config|
       config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
         '$(inherited)',
 
-        ## dart: [PermissionGroup.location, PermissionGroup.locationAlways, PermissionGroup.locationWhenInUse]
+        # Permissions (Location enabled)
         'PERMISSION_LOCATION=1',
       ]
     end
