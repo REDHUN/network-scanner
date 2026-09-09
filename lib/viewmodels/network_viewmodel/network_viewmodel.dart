@@ -130,6 +130,39 @@ class NetworkViewModel extends BaseViewModel {
     }
   }
 
+  /// Check if location action is needed
+  bool get isLocationActionNeeded =>
+      locationStatus != null && locationStatus != LocationStatus.available;
+
+  /// Get action button label based on location status
+  String get locationActionLabel {
+    switch (locationStatus) {
+      case LocationStatus.serviceDisabled:
+        return 'Enable Location';
+      case LocationStatus.permissionDenied:
+        return 'Grant Permission';
+      default:
+        return 'Location Settings';
+    }
+  }
+
+  /// Enable location service or request permission based on current status
+  Future<void> enableLocation() async {
+    if (locationStatus == LocationStatus.serviceDisabled) {
+      await openLocationSettings();
+    } else if (locationStatus == LocationStatus.permissionDenied) {
+      final isPermanentlyDenied =
+          await _permissionService.isLocationPermissionPermanentlyDenied();
+      if (isPermanentlyDenied) {
+        await openAppSettings();
+      } else {
+        await requestLocationPermission();
+      }
+    } else {
+      await openAppSettings();
+    }
+  }
+
   /// Get WiFi name or appropriate message
   String getWifiDisplayName() {
     if (locationStatus != LocationStatus.available) {

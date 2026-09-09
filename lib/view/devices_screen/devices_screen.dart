@@ -50,6 +50,19 @@ class _DevicesScreenState extends State<DevicesScreen> {
   }
 
   @override
+  void didUpdateWidget(DevicesScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!oldWidget.autoStartScan && widget.autoStartScan) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          final scannerVM = context.read<NetworkScannerProvider>();
+          scannerVM.startScan();
+        }
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),

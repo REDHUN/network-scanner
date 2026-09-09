@@ -18,22 +18,55 @@ class LocationPermissionScreen extends StatefulWidget {
       _LocationPermissionScreenState();
 }
 
-class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
+class _LocationPermissionScreenState extends State<LocationPermissionScreen>
+    with WidgetsBindingObserver {
   final _permissionService = PermissionService();
   final _preferencesService = PermissionPreferencesService();
 
   bool _isLoading = false;
-  bool _dontShowAgain = false;
+  final bool _dontShowAgain = false;
 
   @override
   void initState() {
     super.initState();
-    _loadPermissionStatus();
+    WidgetsBinding.instance.addObserver(this);
   }
 
-  Future<void> _loadPermissionStatus() async {
-    // Keep this method if any future initialization requires it, or just empty it out
-    // Since we aren\'t displaying status anymore, we just don't set state
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      _checkIfPermissionGranted();
+    }
+  }
+
+  Future<void> _checkIfPermissionGranted() async {
+    final isGranted = await _permissionService.isRequiredPermissionsGranted();
+    if (isGranted && mounted) {
+      _proceedGranted();
+    }
+  }
+
+  Future<void> _proceedGranted() async {
+    if (_dontShowAgain) {
+      await _preferencesService.setDontShowLocationWarning(true);
+    }
+    await _preferencesService.setAppLaunched();
+    await _preferencesService.setAskedOnFirstLaunch();
+
+    if (mounted) {
+      if (widget.onPermissionGranted != null) {
+        widget.onPermissionGranted!();
+      } else {
+        Navigator.of(context).pop(true);
+      }
+    }
   }
 
   Future<void> _requestPermission() async {
@@ -42,35 +75,28 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
     });
 
     try {
+      // 1. If already granted, proceed directly
+      if (await _permissionService.isRequiredPermissionsGranted()) {
+        await _proceedGranted();
+        return;
+      }
+
+      // 2. Request permission (triggers native system dialog)
       final granted = await _permissionService.requestWifiPermission();
 
-      if (granted) {
-        // Permission granted
-        if (_dontShowAgain) {
-          await _preferencesService.setDontShowLocationWarning(true);
-        }
+      if (granted || await _permissionService.isRequiredPermissionsGranted()) {
+        await _proceedGranted();
+        return;
+      }
 
-        // Mark app as launched since user interacted with permission screen
-        await _preferencesService.setAppLaunched();
+      // 3. If system dialog is suppressed or denied, directly open settings
+      final isLocationServiceOn =
+          await _permissionService.isLocationServiceEnabled();
 
-        // Mark that user has been asked on first launch
-        await _preferencesService.setAskedOnFirstLaunch();
-
-        if (widget.onPermissionGranted != null) {
-          widget.onPermissionGranted!();
-        } else {
-          Navigator.of(context).pop(true);
-        }
+      if (!isLocationServiceOn) {
+        await _permissionService.openLocationSettings();
       } else {
-        // Permission denied
-        await _loadPermissionStatus();
-
-        if (mounted) {
-          SnackbarUtils.showWarning(
-            context,
-            'Location permission is required for network scanning',
-          );
-        }
+        await _permissionService.openSettings();
       }
     } catch (e) {
       if (mounted) {
@@ -96,6 +122,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
     // Mark that user has been asked on first launch
     await _preferencesService.setAskedOnFirstLaunch();
 
+    if (!mounted) return;
     if (widget.onSkipped != null) {
       widget.onSkipped!();
     } else {

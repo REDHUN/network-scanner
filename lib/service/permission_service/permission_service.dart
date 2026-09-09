@@ -48,7 +48,7 @@ class PermissionService {
       }
 
       // Check permission status
-      final currentPermissionStatus = await Permission.locationWhenInUse.status;
+      final currentPermissionStatus = await Permission.location.status;
       if (currentPermissionStatus != _lastPermissionStatus) {
         _lastPermissionStatus = currentPermissionStatus;
         _permissionStatusController.add(currentPermissionStatus);
@@ -66,33 +66,36 @@ class PermissionService {
     _permissionStatusController.close();
   }
 
-  /// Request WiFi/Location permission with preference tracking
+  /// Request WiFi/Location/Nearby Devices permission with preference tracking
   Future<bool> requestWifiPermission() async {
     try {
-      // Check current permission status
-      final status = await Permission.locationWhenInUse.status;
-
-      if (status.isGranted) {
-        // Permission already granted, reset denied count
+      if (await isRequiredPermissionsGranted()) {
         await _preferencesService.resetLocationPermissionDeniedCount();
         return true;
       }
 
-      // Mark that we've asked for permission
       await _preferencesService.setLocationPermissionAsked();
 
-      // Request permission
-      final newStatus = await Permission.locationWhenInUse.request();
+      // Request location and nearby wifi devices permissions
+      final statuses = await [
+        Permission.location,
+        Permission.locationWhenInUse,
+        Permission.nearbyWifiDevices,
+      ].request();
 
-      if (newStatus.isGranted) {
-        // Permission granted, reset denied count
+      final locationGranted = statuses[Permission.location]?.isGranted == true ||
+          statuses[Permission.locationWhenInUse]?.isGranted == true ||
+          await isLocationPermissionGranted();
+
+      final nearbyGranted = await isNearbyWifiDevicesPermissionGranted();
+
+      if (locationGranted && nearbyGranted) {
         await _preferencesService.resetLocationPermissionDeniedCount();
-        log('Location permission granted');
+        log('All required permissions granted');
         return true;
       } else {
-        // Permission denied, increment count
         await _preferencesService.incrementLocationPermissionDeniedCount();
-        log('Location permission denied');
+        log('Permissions denied - location: $locationGranted, nearby: $nearbyGranted');
         return false;
       }
     } catch (e) {
@@ -104,19 +107,51 @@ class PermissionService {
   /// Check if location permission is granted
   Future<bool> isLocationPermissionGranted() async {
     try {
-      final status = await Permission.locationWhenInUse.status;
-      return status.isGranted;
+      final status = await Permission.location.status;
+      if (status.isGranted) return true;
+      final whenInUse = await Permission.locationWhenInUse.status;
+      return whenInUse.isGranted;
     } catch (e) {
       log('Error checking location permission: $e');
       return false;
     }
   }
 
+  /// Check if nearby wifi devices permission is granted
+  Future<bool> isNearbyWifiDevicesPermissionGranted() async {
+    try {
+      final status = await Permission.nearbyWifiDevices.status;
+      // If granted, limited, or not restricted on the platform
+      if (status.isGranted || status.isLimited) return true;
+      // If explicitly denied on Android 13+
+      if (status.isDenied || status.isPermanentlyDenied) {
+        return false;
+      }
+      return true;
+    } catch (e) {
+      log('Error checking nearby wifi devices permission: $e');
+      return true;
+    }
+  }
+
+  /// Check if all required permissions are granted (Location + Nearby Wi-Fi Devices)
+  Future<bool> isRequiredPermissionsGranted() async {
+    final locationGranted = await isLocationPermissionGranted();
+    if (!locationGranted) return false;
+
+    final nearbyGranted = await isNearbyWifiDevicesPermissionGranted();
+    return nearbyGranted;
+  }
+
   /// Check if location permission is permanently denied
   Future<bool> isLocationPermissionPermanentlyDenied() async {
     try {
-      final status = await Permission.locationWhenInUse.status;
-      return status.isPermanentlyDenied;
+      final status = await Permission.location.status;
+      if (status.isPermanentlyDenied) return true;
+      final whenInUse = await Permission.locationWhenInUse.status;
+      if (whenInUse.isPermanentlyDenied) return true;
+      final nearby = await Permission.nearbyWifiDevices.status;
+      return nearby.isPermanentlyDenied;
     } catch (e) {
       log('Error checking permanently denied status: $e');
       return false;
@@ -126,7 +161,11 @@ class PermissionService {
   /// Get location permission status string
   Future<String> getLocationPermissionStatusString() async {
     try {
-      final status = await Permission.locationWhenInUse.status;
+      var status = await Permission.location.status;
+      if (status == PermissionStatus.denied) {
+        final whenInUse = await Permission.locationWhenInUse.status;
+        if (whenInUse.isGranted) status = whenInUse;
+      }
       switch (status) {
         case PermissionStatus.granted:
           return 'Granted';

@@ -12,39 +12,18 @@ class PermissionManager {
   /// Check if we should show the location permission screen
   static Future<bool> shouldShowLocationPermissionScreen() async {
     try {
-      // Check if permission is already granted
-      final isGranted = await _permissionService.isLocationPermissionGranted();
+      // Check if all required permissions (Location + Nearby devices) are granted
+      final isGranted = await _permissionService.isRequiredPermissionsGranted();
       if (isGranted) {
-        log('Location permission already granted');
+        log('Required permissions already granted');
         return false;
       }
 
-      // Check if user has chosen "don't show again"
-      final shouldShow = await _preferencesService.shouldShowLocationWarning();
-      if (!shouldShow) {
-        log('User chose not to show location warning again');
-        return false;
-      }
-
-      // Check if this is the first time launch AND user hasn't been asked yet
-      final isFirstTime = await _preferencesService.isFirstTimeLaunch();
-      final hasBeenAskedOnFirstLaunch = await _preferencesService
-          .hasBeenAskedOnFirstLaunch();
-
-      if (isFirstTime && !hasBeenAskedOnFirstLaunch) {
-        log(
-          'First time launch and user has not been asked yet - should show location permission screen',
-        );
-        return true;
-      }
-
-      log(
-        'Not showing permission screen - either not first time or user already asked',
-      );
-      return false;
+      log('Required permissions not granted - should show location permission screen');
+      return true;
     } catch (e) {
       log('Error checking if should show permission screen: $e');
-      return false; // Default to not showing if there's an error
+      return true; // Default to showing if there's an error / not confirmed
     }
   }
 

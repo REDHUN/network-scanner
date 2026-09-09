@@ -12,7 +12,8 @@ import 'package:ip_tools/viewmodels/scanner_viewmodel/scanner_viewmodel.dart';
 import 'package:provider/provider.dart';
 
 class MainNavigation extends StatefulWidget {
-  const MainNavigation({super.key});
+  final int initialIndex;
+  const MainNavigation({super.key, this.initialIndex = 1});
 
   @override
   State<MainNavigation> createState() => MainNavigationState();
@@ -21,13 +22,13 @@ class MainNavigation extends StatefulWidget {
 class MainNavigationState extends State<MainNavigation>
     with WidgetsBindingObserver {
   final ConnectivityService _connectivityService = ConnectivityService();
-  int _currentIndex = 0;
+  late int _currentIndex;
   bool _isWiFiConnected = true;
   StreamSubscription<bool>? _wifiSubscription;
   bool _autoStartScanOnDevicesScreen = false;
 
   List<Widget> get _screens => [
-    const Homescreen(),
+    Homescreen(onStartScan: () => switchTab(1, autoStartScan: true)),
     DevicesScreen(autoStartScan: _autoStartScanOnDevicesScreen),
     const RouterHistoryScreen(),
   ];
@@ -35,6 +36,7 @@ class MainNavigationState extends State<MainNavigation>
   @override
   void initState() {
     super.initState();
+    _currentIndex = widget.initialIndex;
     WidgetsBinding.instance.addObserver(this);
 
     _startWiFiMonitoring();
@@ -215,12 +217,18 @@ class MainNavigationState extends State<MainNavigation>
     });
   }
 
-  void switchTab(int index) {
+  void switchTab(int index, {bool autoStartScan = false}) {
     if (mounted) {
       if (index == 0) {
         final scannerVM = context.read<NetworkScannerProvider>();
         if (scannerVM.state == ScanState.done) {
           scannerVM.resetScan();
+        }
+      }
+      if (index == 1 && autoStartScan) {
+        final scannerVM = context.read<NetworkScannerProvider>();
+        if (scannerVM.state != ScanState.scanning) {
+          scannerVM.startScan();
         }
       }
       setState(() => _currentIndex = index);
@@ -276,7 +284,10 @@ class MainNavigationState extends State<MainNavigation>
     }
 
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _screens,
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,

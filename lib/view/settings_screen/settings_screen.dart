@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:ip_tools/common/utils/snackbar_utils.dart';
 import 'package:ip_tools/service/permission_manager/permission_manager.dart';
 import 'package:ip_tools/service/permission_preferences_service/permission_preferences_service.dart';
+import 'package:ip_tools/service/review_service/review_service.dart';
 import 'package:ip_tools/viewmodels/theme_viewmodel/theme_viewmodel.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -78,6 +79,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 16),
 
+              // Rate & Review Card
+              _buildMenuCard(
+                'Rate & Review',
+                Icons.star_rate_rounded,
+                onTap: _rateApp,
+              ),
+              const SizedBox(height: 12),
+
               // Help & Support Card
               _buildMenuCard(
                 'Help & Support',
@@ -144,6 +153,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   'Clear All Preferences',
                   Icons.delete_outline,
                   onTap: _clearAllPreferences,
+                ),
+                const SizedBox(height: 12),
+
+                // Reset Review Tracking
+                _buildMenuCard(
+                  'Reset Review Tracking',
+                  Icons.star_border,
+                  onTap: _resetReviewData,
                 ),
               ],
 
@@ -995,6 +1012,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (e) {
       if (mounted) {
         SnackbarUtils.showError(context, 'Error clearing preferences: $e');
+      }
+    }
+  }
+
+  Future<void> _rateApp() async {
+    try {
+      await ReviewService.instance.requestReview();
+    } catch (e) {
+      if (mounted) {
+        SnackbarUtils.showError(context, 'Unable to open review: $e');
+      }
+    }
+  }
+
+  Future<void> _resetReviewData() async {
+    try {
+      await ReviewService.instance.resetReviewData();
+      if (mounted) {
+        SnackbarUtils.showSuccess(
+          context,
+          'Review tracking data reset successfully',
+          icon: Icons.star_border,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackbarUtils.showError(context, 'Error resetting review data: $e');
       }
     }
   }

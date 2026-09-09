@@ -3,11 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:ip_tools/common/utils/snackbar_utils.dart';
 import 'package:ip_tools/service/permission_manager/permission_manager.dart';
 import 'package:ip_tools/view/devices_screen/devices_screen.dart';
+import 'package:ip_tools/view/main_navigation/main_navigation.dart';
 import 'package:ip_tools/viewmodels/network_viewmodel/network_viewmodel.dart';
 import 'package:provider/provider.dart';
 
 class Homescreen extends StatefulWidget {
-  const Homescreen({super.key});
+  final VoidCallback? onStartScan;
+  const Homescreen({super.key, this.onStartScan});
 
   @override
   State<Homescreen> createState() => _HomescreenState();
@@ -168,13 +170,51 @@ class _HomescreenState extends State<Homescreen> {
                                         // Network Name
                                         Text(
                                           vm.getWifiDisplayName(),
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             color: Colors.white,
-                                            fontSize: 32,
+                                            fontSize: vm.isLocationActionNeeded
+                                                ? 20
+                                                : 32,
                                             fontWeight: FontWeight.w800,
                                             letterSpacing: -0.5,
                                           ),
                                         ),
+                                        if (vm.isLocationActionNeeded) ...[
+                                          const SizedBox(height: 12),
+                                          ElevatedButton.icon(
+                                            onPressed: () =>
+                                                vm.enableLocation(),
+                                            icon: const Icon(
+                                              Icons.location_on_rounded,
+                                              size: 18,
+                                              color: Color(0xFF5D64E6),
+                                            ),
+                                            label: Text(
+                                              vm.locationActionLabel,
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w700,
+                                                color: Color(0xFF5D64E6),
+                                              ),
+                                            ),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.white,
+                                              foregroundColor: const Color(
+                                                0xFF5D64E6,
+                                              ),
+                                              elevation: 0,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 16,
+                                                    vertical: 10,
+                                                  ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(14),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                         const SizedBox(height: 8),
 
                                         // Router Info & Details Button
@@ -228,9 +268,9 @@ class _HomescreenState extends State<Homescreen> {
 
                       const SizedBox(height: 36),
 
-                      // Section Title
+                      // Section 1: WI-FI DETAILS
                       const Text(
-                        'NETWORK DETAILS',
+                        'WI-FI DETAILS',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
@@ -238,36 +278,305 @@ class _HomescreenState extends State<Homescreen> {
                           letterSpacing: 1.5,
                         ),
                       ),
+                      const SizedBox(height: 12),
 
-                      const SizedBox(height: 20),
-
-                      // Network Details Cards
                       Consumer<NetworkViewModel>(
                         builder: (context, vm, _) {
-                          return Column(
-                            children: [
-                              _buildDetailCard(
-                                'Local IP',
-                                vm.networkInfo?.wifiIP ?? '-',
-                                Icons.account_tree_outlined,
+                          final info = vm.networkInfo;
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.04),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                              border: Border.all(
+                                color: const Color(0xFFE5E7EB),
+                                width: 1,
                               ),
-                              const SizedBox(height: 16),
-                              _buildDetailCard(
-                                'Gateway',
-                                vm.networkInfo?.gateway ?? '-',
-                                Icons.mediation_outlined,
-                              ),
-                              const SizedBox(height: 16),
-                              _buildDetailCard(
-                                'Subnet Mask',
-                                vm.networkInfo?.subnet ?? '-',
-                                Icons.grid_view_rounded,
-                              ),
-                              const SizedBox(height: 16),
-                            ],
+                            ),
+                            child: Column(
+                              children: [
+                                _buildTableRow(
+                                  icon: Icons.public,
+                                  iconColor: const Color(0xFF38BDF8),
+                                  label: 'WiFi State:',
+                                  customValueWidget: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: BoxDecoration(
+                                          color: vm.isNetworkActive
+                                              ? const Color(0xFF22C55E)
+                                              : Colors.redAccent,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        vm.isNetworkActive
+                                            ? 'Online'
+                                            : 'Offline',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: vm.isNetworkActive
+                                              ? const Color(0xFF16A34A)
+                                              : Colors.redAccent,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  value: vm.isNetworkActive
+                                      ? 'Online'
+                                      : 'Offline',
+                                  showDivider: true,
+                                ),
+                                _buildTableRow(
+                                  icon: Icons.public,
+                                  iconColor: const Color(0xFF38BDF8),
+                                  label: 'Timezone:',
+                                  value: info?.timezone ?? 'N/A',
+                                  showDivider: true,
+                                ),
+                                _buildTableRow(
+                                  icon: Icons.wifi,
+                                  iconColor: const Color(0xFF38BDF8),
+                                  label: 'SSID:',
+                                  value: info?.wifiName ?? 'N/A',
+                                  showDivider: true,
+                                ),
+                                _buildTableRow(
+                                  icon: Icons.public,
+                                  iconColor: const Color(0xFF38BDF8),
+                                  label: 'ISP:',
+                                  value: info?.isp ?? 'N/A',
+                                  showDivider: true,
+                                ),
+                                _buildTableRow(
+                                  icon: Icons.business,
+                                  iconColor: const Color(0xFF38BDF8),
+                                  label: 'Organization:',
+                                  value: info?.organization ?? 'N/A',
+                                  showDivider: true,
+                                ),
+                                _buildTableRow(
+                                  icon: Icons.wifi,
+                                  iconColor: const Color(0xFF38BDF8),
+                                  label: 'BSSID:',
+                                  value: (info?.bssid != null &&
+                                          info!.bssid!.isNotEmpty &&
+                                          info.bssid != 'null')
+                                      ? info.bssid!
+                                      : 'N/A',
+                                  showDivider: true,
+                                ),
+                                _buildTableRow(
+                                  icon: Icons.cell_tower,
+                                  iconColor: const Color(0xFF38BDF8),
+                                  label: 'WiFi Broadcast:',
+                                  value: info?.resolvedBroadcast ?? 'N/A',
+                                  showDivider: true,
+                                ),
+                                _buildTableRow(
+                                  icon: Icons.scatter_plot,
+                                  iconColor: const Color(0xFF38BDF8),
+                                  label: 'Subnet Mask:',
+                                  value: info?.subnet != null
+                                      ? '${info!.subnet}${info.cidr != null ? ' (${info.cidr})' : ''}'
+                                      : 'N/A',
+                                  showDivider: true,
+                                ),
+                                _buildTableRow(
+                                  icon: Icons.dns_outlined,
+                                  iconColor: const Color(0xFF38BDF8),
+                                  label: 'Default Gateway IP:',
+                                  value: info?.gateway ?? 'N/A',
+                                  showDivider: true,
+                                ),
+                                _buildTableRow(
+                                  icon: Icons.public,
+                                  iconColor: const Color(0xFF38BDF8),
+                                  label: 'IPv4:',
+                                  value: info?.wifiIP ?? 'N/A',
+                                  showDivider: true,
+                                ),
+                                _buildTableRow(
+                                  icon: Icons.public,
+                                  iconColor: const Color(0xFF38BDF8),
+                                  label: 'IPv6:',
+                                  value: (info?.ipv6 != null &&
+                                          info!.ipv6!.isNotEmpty &&
+                                          info.ipv6 != 'null')
+                                      ? info.ipv6!
+                                      : 'N/A',
+                                  showDivider: false,
+                                ),
+                              ],
+                            ),
                           );
                         },
                       ),
+
+                      const SizedBox(height: 28),
+
+                      // Section 2: LOCATION & PROVIDER DETAILS
+                      const Text(
+                        'LOCATION & PROVIDER DETAILS',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF6B7280),
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      Consumer<NetworkViewModel>(
+                        builder: (context, vm, _) {
+                          final info = vm.networkInfo;
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.04),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                              border: Border.all(
+                                color: const Color(0xFFE5E7EB),
+                                width: 1,
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                _buildTableRow(
+                                  icon: Icons.location_city,
+                                  iconColor: const Color(0xFF38BDF8),
+                                  label: 'City:',
+                                  value: info?.city ?? 'N/A',
+                                  showDivider: true,
+                                ),
+                                _buildTableRow(
+                                  icon: Icons.map_outlined,
+                                  iconColor: const Color(0xFF38BDF8),
+                                  label: 'Region:',
+                                  value: info?.region ?? 'N/A',
+                                  showDivider: true,
+                                ),
+                                _buildTableRow(
+                                  icon: Icons.flag_outlined,
+                                  iconColor: const Color(0xFF38BDF8),
+                                  label: 'Country:',
+                                  value: info?.country ?? 'N/A',
+                                  showDivider: true,
+                                ),
+                                _buildTableRow(
+                                  icon: Icons.explore_outlined,
+                                  iconColor: const Color(0xFF38BDF8),
+                                  label: 'Coordinates (Provider):',
+                                  value: info?.coordinatesDisplay ?? 'N/A',
+                                  showDivider: false,
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+
+                      const SizedBox(height: 28),
+
+                      // Section 3: NETWORK HOST & CONFIGURATION
+                      const Text(
+                        'HOST & NETWORK CONFIGURATION',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF6B7280),
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      Consumer<NetworkViewModel>(
+                        builder: (context, vm, _) {
+                          final info = vm.networkInfo;
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.04),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                              border: Border.all(
+                                color: const Color(0xFFE5E7EB),
+                                width: 1,
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                _buildTableRow(
+                                  icon: Icons.lan_outlined,
+                                  iconColor: const Color(0xFF38BDF8),
+                                  label: 'Host (Public IP):',
+                                  value: info?.publicIp ?? 'N/A',
+                                  showDivider: true,
+                                ),
+                                _buildTableRow(
+                                  icon: Icons.computer_outlined,
+                                  iconColor: const Color(0xFF38BDF8),
+                                  label: 'Localhost:',
+                                  value: info?.localhost ?? '127.0.0.1',
+                                  showDivider: true,
+                                ),
+                                _buildTableRow(
+                                  icon: Icons.hub_outlined,
+                                  iconColor: const Color(0xFF38BDF8),
+                                  label: 'ASN:',
+                                  value: info?.asn ?? 'N/A',
+                                  showDivider: true,
+                                ),
+                                _buildTableRow(
+                                  icon: Icons.wifi,
+                                  iconColor: const Color(0xFF38BDF8),
+                                  label: 'Connection type:',
+                                  value: info?.connectionType ?? 'WIFI',
+                                  showDivider: true,
+                                ),
+                                _buildTableRow(
+                                  icon: Icons.swap_horiz,
+                                  iconColor: const Color(0xFF38BDF8),
+                                  label: 'Usable IP Range:',
+                                  value: info?.ipRange ?? 'N/A',
+                                  showDivider: true,
+                                ),
+                                _buildTableRow(
+                                  icon: Icons.devices,
+                                  iconColor: const Color(0xFF38BDF8),
+                                  label: 'Host Capacity:',
+                                  value: info?.totalHosts ?? 'N/A',
+                                  showDivider: false,
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+
+                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
@@ -299,12 +608,24 @@ class _HomescreenState extends State<Homescreen> {
                             featureName: 'Network Scanning',
                           );
 
-                      if (hasPermission && mounted) {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => const DevicesScreen(),
-                          ),
-                        );
+                      if (!context.mounted) return;
+                      if (hasPermission) {
+                        if (widget.onStartScan != null) {
+                          widget.onStartScan!();
+                        } else {
+                          final mainNav =
+                              context.findAncestorStateOfType<MainNavigationState>();
+                          if (mainNav != null) {
+                            mainNav.switchTab(1, autoStartScan: true);
+                          } else {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const DevicesScreen(autoStartScan: true),
+                              ),
+                            );
+                          }
+                        }
                       }
                     },
                     style: ElevatedButton.styleFrom(
@@ -343,58 +664,79 @@ class _HomescreenState extends State<Homescreen> {
     );
   }
 
-  Widget _buildDetailCard(String label, String value, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF9FAFB),
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFEEEDFF),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(icon, color: const Color(0xFF656CEB), size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildTableRow({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    required String value,
+    Widget? customValueWidget,
+    bool showDivider = true,
+  }) {
+    final bool isNA = value == 'N/A' || value == '-' || value.isEmpty;
+
+    return Column(
+      children: [
+        InkWell(
+          onTap: isNA ? null : () => _copyToClipboard(value, label.replaceAll(':', '')),
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                // Icon
+                Icon(
+                  icon,
+                  color: iconColor,
+                  size: 20,
+                ),
+                const SizedBox(width: 14),
+
+                // Label
                 Text(
                   label,
                   style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF6B7280),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1F2937),
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF111827),
+                const SizedBox(width: 12),
+
+                // Value
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: customValueWidget ??
+                        Text(
+                          value,
+                          textAlign: TextAlign.right,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: isNA
+                                ? const Color(0xFF9CA3AF)
+                                : const Color(0xFF6B7280),
+                            height: 1.3,
+                          ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
-          GestureDetector(
-            onTap: () => _copyToClipboard(value, label),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              child: const Icon(Icons.copy, color: Color(0xFF9CA3AF), size: 22),
-            ),
+        ),
+        if (showDivider)
+          const Divider(
+            height: 1,
+            thickness: 1,
+            indent: 16,
+            endIndent: 16,
+            color: Color(0xFFF3F4F6),
           ),
-        ],
-      ),
+      ],
     );
   }
 }

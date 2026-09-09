@@ -71,15 +71,13 @@ class _SplashScreenState extends State<SplashScreen>
                 onTimeout: () => true, // Default to true if timeout
               );
 
-          // If WiFi is connected, check permissions
-          if (isWiFiConnected) {
-            shouldShowPermissionScreen =
-                await PermissionManager.shouldShowLocationPermissionScreen();
-          }
+          // Check permissions
+          shouldShowPermissionScreen =
+              await PermissionManager.shouldShowLocationPermissionScreen();
         } catch (e) {
           // On error, default to true for WiFi to allow proceeding
           isWiFiConnected = true;
-          shouldShowPermissionScreen = false;
+          shouldShowPermissionScreen = true;
         }
       }(),
     ]);

@@ -7,6 +7,7 @@ import 'package:ip_tools/models/network_model/scanned_device.dart';
 import 'package:ip_tools/models/storage/router_network_data.dart';
 import 'package:ip_tools/service/device_storage_service/device_storage_service.dart';
 import 'package:ip_tools/service/network_scanner_service/network_scanner_service.dart';
+import 'package:ip_tools/service/review_service/review_service.dart';
 
 enum ScanState { idle, scanning, done, error }
 
@@ -97,6 +98,9 @@ class NetworkScannerProvider extends ChangeNotifier {
                 await _saveScanResults();
                 await _loadOfflineDevices(); // Refresh offline devices
               }
+
+              // Check if conditions are met to prompt review
+              unawaited(ReviewService.instance.logScanAndCheckPrompt());
 
               notifyListeners();
             },
