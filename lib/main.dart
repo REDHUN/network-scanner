@@ -4,9 +4,6 @@ import 'package:ip_tools/service/network_scanner_service/network_scanner_service
 import 'package:ip_tools/view/splash_screen/splash_screen.dart';
 import 'package:ip_tools/viewmodels/network_viewmodel/network_viewmodel.dart';
 import 'package:ip_tools/viewmodels/scanner_viewmodel/scanner_viewmodel.dart';
-import 'package:ip_tools/viewmodels/theme_viewmodel/theme_viewmodel.dart';
-import 'package:network_tools/network_tools.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import 'core/theme/app_theme.dart';
@@ -22,9 +19,6 @@ Future<void> main() async {
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
-
-  final dir = await getApplicationDocumentsDirectory();
-  await configureNetworkTools(dir.path, enableDebugging: false);
 
   runApp(const MyApp());
 }
@@ -49,19 +43,12 @@ class MyApp extends StatelessWidget {
           ),
         ),
         ChangeNotifierProvider(create: (c) => NetworkScannerProvider()),
-        ChangeNotifierProvider<ThemeViewModel>(create: (_) => ThemeViewModel()),
       ],
-      child: Consumer<ThemeViewModel>(
-        builder: (context, themeVM, child) {
-          return MaterialApp(
-            title: 'IP Tools : Network Scanner',
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: themeVM.themeMode,
-            home: const SplashScreen(),
-            debugShowCheckedModeBanner: false,
-          );
-        },
+      child: MaterialApp(
+        title: 'IP Tools : Network Scanner',
+        theme: AppTheme.lightTheme,
+        home: const SplashScreen(),
+        debugShowCheckedModeBanner: false,
       ),
     );
   }

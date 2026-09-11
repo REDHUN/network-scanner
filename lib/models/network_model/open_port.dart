@@ -3,12 +3,14 @@ class OpenPort {
   final String service;
   final String description;
   final bool isSecure;
+  final String? banner;
 
   OpenPort({
     required this.port,
     required this.service,
     required this.description,
     required this.isSecure,
+    this.banner,
   });
 
   Map<String, dynamic> toJson() {
@@ -17,6 +19,7 @@ class OpenPort {
       'service': service,
       'description': description,
       'isSecure': isSecure,
+      if (banner != null) 'banner': banner,
     };
   }
 
@@ -26,6 +29,7 @@ class OpenPort {
       service: json['service'] as String,
       description: json['description'] as String,
       isSecure: json['isSecure'] as bool,
+      banner: json['banner'] as String?,
     );
   }
 
@@ -38,6 +42,32 @@ class OpenPort {
 
   @override
   int get hashCode => port.hashCode;
+}
+
+class PortScanProgress {
+  final String ipAddress;
+  final int totalPorts;
+  final int scannedPorts;
+  final double progress; // 0.0 to 1.0
+  final OpenPort? latestFoundPort;
+  final List<OpenPort> openPorts;
+  final Duration elapsed;
+  final bool isComplete;
+  final bool isCancelled;
+
+  PortScanProgress({
+    required this.ipAddress,
+    required this.totalPorts,
+    required this.scannedPorts,
+    required this.progress,
+    this.latestFoundPort,
+    required this.openPorts,
+    required this.elapsed,
+    this.isComplete = false,
+    this.isCancelled = false,
+  });
+
+  int get openPortsCount => openPorts.length;
 }
 
 class PortScanResult {

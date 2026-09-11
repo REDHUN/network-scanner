@@ -19,16 +19,22 @@ class NetworkScannerProvider extends ChangeNotifier {
   final List<ScannedDevice> devices = [];
   final List<StoredDevice> offlineDevices = [];
   bool isFirstApiCall = true;
+
+  // Real-time scan progress
+  double progress = 0.0;
+  int scannedCount = 0;
+  int totalCount = 254;
+
   ScanSettings settings = const ScanSettings(
     firstHost: 1,
-    lastHost: 50, // Reduce initial scan range for better performance
+    lastHost: 254,
     pingTimeout: 1,
   );
   String? error;
   NetworkInfoModel? currentNetworkInfo;
   bool hasRouterChanged = false;
 
-  StreamSubscription<ScannedDevice>? _sub;
+  StreamSubscription<NetworkScanProgressEvent>? _progressSub;
 
   /// Initialize with network info and check for router changes
   Future<void> initializeWithNetworkInfo(NetworkInfoModel networkInfo) async {
@@ -59,7 +65,7 @@ class NetworkScannerProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> startScan({bool fullScan = false}) async {
+  Future<void> startScan({bool fullScan = true}) async {
     if (state == ScanState.scanning) return;
 
     stopScan();
@@ -67,23 +73,43 @@ class NetworkScannerProvider extends ChangeNotifier {
     state = ScanState.scanning;
     error = null;
     devices.clear();
+    progress = 0.0;
+    scannedCount = 0;
+    totalCount = 254;
     notifyListeners();
 
-    // Use different settings based on scan type
     final scanSettings = fullScan
         ? const ScanSettings(firstHost: 1, lastHost: 254, pingTimeout: 1)
-        : const ScanSettings(firstHost: 1, lastHost: 50, pingTimeout: 1);
+        : const ScanSettings(firstHost: 1, lastHost: 100, pingTimeout: 1);
 
-    // Start scanning asynchronously to prevent UI blocking
     try {
-      _sub = _scanner
-          .scan(scanSettings)
+      _progressSub = _scanner
+          .scanWithProgress(scanSettings, networkInfo: currentNetworkInfo)
           .listen(
-            (device) {
-              if (!devices.any((d) => d.ip == device.ip)) {
-                devices.add(device);
-                notifyListeners();
+            (event) {
+              progress = event.progress;
+              scannedCount = event.scannedHosts;
+              totalCount = event.totalHosts;
+
+              if (event.foundDevice != null) {
+                final newDev = event.foundDevice!;
+                final index = devices.indexWhere((d) => d.ip == newDev.ip);
+                if (index >= 0) {
+                  // Enrich existing entry
+                  devices[index] = devices[index].copyWith(
+                    mac: newDev.mac ?? devices[index].mac,
+                    name: (newDev.name != null && !newDev.name!.startsWith('Device ('))
+                        ? newDev.name
+                        : devices[index].name,
+                    mdns: newDev.mdns ?? devices[index].mdns,
+                    isSelf: newDev.isSelf || devices[index].isSelf,
+                    isGateway: newDev.isGateway || devices[index].isGateway,
+                  );
+                } else {
+                  devices.add(newDev);
+                }
               }
+              notifyListeners();
             },
             onError: (e) {
               error = e.toString();
@@ -92,16 +118,14 @@ class NetworkScannerProvider extends ChangeNotifier {
             },
             onDone: () async {
               state = ScanState.done;
+              progress = 1.0;
 
-              // Save scan results to storage if we have network info
               if (currentNetworkInfo != null) {
                 await _saveScanResults();
-                await _loadOfflineDevices(); // Refresh offline devices
+                await _loadOfflineDevices();
               }
 
-              // Check if conditions are met to prompt review
               unawaited(ReviewService.instance.logScanAndCheckPrompt());
-
               notifyListeners();
             },
           );
@@ -148,55 +172,50 @@ class NetworkScannerProvider extends ChangeNotifier {
   }
 
   /// Get device statistics
-  Future<Map<String, int>> getDeviceStats() async {
-    return await _storageService.getDeviceStats();
+  int get totalDevicesCount => getAllDevicesWithStatus().length;
+  int get onlineDevicesCount => devices.length;
+  int get offlineDevicesCount => offlineDevices.length;
+
+  /// Get online devices only
+  List<StoredDevice> getOnlineDevices() {
+    return devices
+        .map((device) => StoredDevice.fromScannedDevice(device))
+        .toList();
   }
 
-  /// Get only online devices
-  List<ScannedDevice> getOnlineDevices() {
-    return devices;
-  }
-
-  /// Get only offline devices
+  /// Get offline devices only
   List<StoredDevice> getOfflineDevices() {
     return offlineDevices;
   }
 
-  /// Get recently offline devices (within 24 hours)
-  Future<List<StoredDevice>> getRecentlyOfflineDevices() async {
-    return await _storageService.getRecentlyOfflineDevices();
-  }
-
-  /// Clear all stored data
-  Future<void> clearStoredData() async {
-    await _storageService.clearAllData();
-    offlineDevices.clear();
-    notifyListeners();
-  }
-
-  /// Get all router networks
+  /// Get all stored router networks
   Future<List<RouterNetworkData>> getAllRouterNetworks() async {
     return await _storageService.getAllRouterNetworks();
   }
 
-  /// Get router summary with statistics
-  Future<Map<String, dynamic>> getRouterSummary() async {
-    return await _storageService.getRouterSummary();
-  }
-
-  /// Switch to a different router's data (for viewing historical data)
+  /// Switch to a specific router's history
   Future<void> switchToRouter(String routerId) async {
     try {
-      final routerData = await _storageService.getRouterData(routerId);
-      if (routerData != null) {
-        // Load devices from the selected router
+      final targetRouter = await _storageService.getRouterData(routerId);
+
+      if (targetRouter != null) {
         devices.clear();
         offlineDevices.clear();
 
-        // Separate online and offline devices
-        for (final device in routerData.devices) {
+        // Categorize stored devices
+        for (final device in targetRouter.devices) {
           if (device.isOnline) {
-            devices.add(device.toScannedDevice());
+            // Convert to ScannedDevice for online list
+            devices.add(
+              ScannedDevice(
+                ip: device.ip,
+                mac: device.mac,
+                name: device.name,
+                mdns: device.mdns,
+                isSelf: device.isSelf,
+                isGateway: device.isGateway,
+              ),
+            );
           } else {
             offlineDevices.add(device);
           }
@@ -223,8 +242,6 @@ class NetworkScannerProvider extends ChangeNotifier {
       final currentRouterId = await _storageService.getCurrentRouterId();
       if (currentRouterId == null || currentRouterId == routerId) {
         devices.clear();
-        offlineDevices.clear();
-        notifyListeners();
       }
     } catch (e) {
       debugPrint('Error deleting router data: $e');
@@ -232,14 +249,27 @@ class NetworkScannerProvider extends ChangeNotifier {
     }
   }
 
+  /// Delete an individual offline device
+  Future<void> deleteOfflineDevice(String ip) async {
+    try {
+      await _storageService.deleteOfflineDevice(ip);
+      offlineDevices.removeWhere((d) => d.ip == ip);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error deleting offline device: $e');
+    }
+  }
+
   void stopScan() {
-    _sub?.cancel();
+    _progressSub?.cancel();
+    _progressSub = null;
     state = ScanState.done;
     notifyListeners();
   }
 
   void resetScan() {
-    _sub?.cancel();
+    _progressSub?.cancel();
+    _progressSub = null;
     state = ScanState.idle;
     error = null;
     notifyListeners();
@@ -247,7 +277,7 @@ class NetworkScannerProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    _sub?.cancel();
+    _progressSub?.cancel();
     super.dispose();
   }
 }

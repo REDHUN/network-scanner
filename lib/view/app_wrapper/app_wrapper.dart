@@ -30,34 +30,42 @@ class _AppWrapperState extends State<AppWrapper> {
   }
 
   void _onPermissionGranted() {
-    setState(() {
-      _shouldShowPermissionScreen = false;
-    });
-  }
-
-  void _onPermissionSkipped() {
-    setState(() {
-      _shouldShowPermissionScreen = false;
-    });
-  }
-
-  void _onWiFiConnected() async {
-    // Show loading while checking permissions after wifi connects
-    setState(() {
-      _isWiFiConnected = true;
-    });
-
-    // Once wifi connects, we still need to check permissions if we haven't
-    try {
-      final shouldShow =
-          await PermissionManager.shouldShowLocationPermissionScreen();
-      setState(() {
-        _shouldShowPermissionScreen = shouldShow;
-      });
-    } catch (e) {
+    if (mounted) {
       setState(() {
         _shouldShowPermissionScreen = false;
       });
+    }
+  }
+
+  void _onPermissionSkipped() {
+    if (mounted) {
+      setState(() {
+        _shouldShowPermissionScreen = false;
+      });
+    }
+  }
+
+  void _onWiFiConnected() async {
+    if (mounted) {
+      setState(() {
+        _isWiFiConnected = true;
+      });
+    }
+
+    try {
+      final shouldShow =
+          await PermissionManager.shouldShowLocationPermissionScreen();
+      if (mounted) {
+        setState(() {
+          _shouldShowPermissionScreen = shouldShow;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _shouldShowPermissionScreen = false;
+        });
+      }
     }
   }
 

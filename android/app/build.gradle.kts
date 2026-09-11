@@ -46,24 +46,28 @@ android {
             storePassword = keystoreProperties.getProperty("storePassword")
         }
     }
-    buildTypes {
-        release {
-            signingConfig = if (keystorePropertiesFile.exists()) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
-            }
-            
-            // Simple release build without advanced optimizations
-            // This ensures compatibility while still providing a release build
-            isMinifyEnabled = false
-            isShrinkResources = false
+   buildTypes {
+    release {
+        signingConfig = if (keystorePropertiesFile.exists()) {
+            signingConfigs.getByName("release")
+        } else {
+            signingConfigs.getByName("debug")
         }
-        debug {
-            isMinifyEnabled = false
-            isShrinkResources = false
-        }
+
+        isMinifyEnabled = true
+        isShrinkResources = true
+
+        proguardFiles(
+            getDefaultProguardFile("proguard-android-optimize.txt"),
+            "proguard-rules.pro"
+        )
     }
+
+    debug {
+        isMinifyEnabled = false
+        isShrinkResources = false
+    }
+}
 }
 
 flutter {

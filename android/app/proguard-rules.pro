@@ -34,8 +34,8 @@
 -keep class io.flutter.plugins.sharedpreferences.SharedPreferencesPlugin { *; }
 -keep class io.flutter.plugins.urllauncher.UrlLauncherPlugin { *; }
 
-# Network Tools - Keep scanning methods
--keep class network_tools.** { *; }
+# Flutter Network Scanner - Keep scanning plugin classes
+-keep class com.example.flutter_network_scanner.** { *; }
 
 # Keep native methods
 -keepclasseswithmembernames class * {

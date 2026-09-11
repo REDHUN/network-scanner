@@ -6,6 +6,7 @@ import 'package:ip_tools/service/permission_manager/permission_manager.dart';
 import 'package:ip_tools/view/devices_screen/devices_screen.dart';
 import 'package:ip_tools/view/homescreen/homescreen.dart';
 import 'package:ip_tools/view/router_history_screen/router_history_screen.dart';
+import 'package:ip_tools/view/tools_screen/tools_screen.dart';
 import 'package:ip_tools/view/wifi_connection_screen/wifi_connection_screen.dart';
 import 'package:ip_tools/viewmodels/network_viewmodel/network_viewmodel.dart';
 import 'package:ip_tools/viewmodels/scanner_viewmodel/scanner_viewmodel.dart';
@@ -30,6 +31,7 @@ class MainNavigationState extends State<MainNavigation>
   List<Widget> get _screens => [
     Homescreen(onStartScan: () => switchTab(1, autoStartScan: true)),
     DevicesScreen(autoStartScan: _autoStartScanOnDevicesScreen),
+    const ToolsScreen(),
     const RouterHistoryScreen(),
   ];
 
@@ -43,6 +45,7 @@ class MainNavigationState extends State<MainNavigation>
 
     // Initialize network information globally when the app loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final networkVM = Provider.of<NetworkViewModel>(context, listen: false);
       final scannerVM = Provider.of<NetworkScannerProvider>(
         context,
@@ -50,6 +53,7 @@ class MainNavigationState extends State<MainNavigation>
       );
 
       networkVM.loadNetworkInfo().then((_) async {
+        if (!mounted) return;
         if (networkVM.networkInfo != null) {
           await scannerVM.initializeWithNetworkInfo(networkVM.networkInfo!);
           if (scannerVM.hasRouterChanged && mounted) {
@@ -57,7 +61,9 @@ class MainNavigationState extends State<MainNavigation>
           }
         }
       });
-      networkVM.startNetworkMonitoring();
+      if (mounted) {
+        networkVM.startNetworkMonitoring();
+      }
     });
   }
 
@@ -66,16 +72,19 @@ class MainNavigationState extends State<MainNavigation>
     super.didChangeAppLifecycleState(state);
 
     // When app resumes from background (e.g., returning from settings)
-    if (state == AppLifecycleState.resumed) {
-      final networkVM = Provider.of<NetworkViewModel>(context, listen: false);
+    if (state == AppLifecycleState.resumed && mounted) {
       // Small delay to ensure system has updated permissions/settings
       Future.delayed(const Duration(milliseconds: 500), () {
-        networkVM.loadNetworkInfo();
+        if (mounted) {
+          final networkVM = Provider.of<NetworkViewModel>(context, listen: false);
+          networkVM.loadNetworkInfo();
+        }
       });
     }
   }
 
   void _showNewNetworkPrompt() {
+    if (!mounted) return;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -293,70 +302,89 @@ class MainNavigationState extends State<MainNavigation>
           color: Colors.white,
           border: Border(
             top: BorderSide(
-              color: Colors.grey.withValues(alpha: 0.1),
+              color: Colors.grey.withValues(alpha: 0.12),
               width: 1,
             ),
           ),
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) {
-            if (mounted) {
-              // Reset scan state when navigating to home (index 0)
-              if (index == 0) {
-                final scannerVM = context.read<NetworkScannerProvider>();
-                if (scannerVM.state == ScanState.done) {
-                  scannerVM.resetScan();
-                }
-              }
-              setState(() => _currentIndex = index);
-            }
-          },
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          elevation: 0,
-          selectedItemColor: const Color(0xFF656CEB),
-          unselectedItemColor: const Color(0xFF9CA3AF),
-          selectedLabelStyle: const TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.5,
-          ),
-          unselectedLabelStyle: const TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.5,
-          ),
-          items: const [
-            BottomNavigationBarItem(
-              icon: Padding(
-                padding: EdgeInsets.only(bottom: 4),
-                child: Icon(Icons.dashboard),
-              ),
-              label: 'DASHBOARD',
-            ),
-            BottomNavigationBarItem(
-              icon: Padding(
-                padding: EdgeInsets.only(bottom: 4),
-                child: Icon(Icons.devices_other),
-              ),
-              label: 'DEVICES',
-            ),
-            // BottomNavigationBarItem(
-            //   icon: Padding(
-            //     padding: EdgeInsets.only(bottom: 4),
-            //     child: Icon(Icons.settings),
-            //   ),
-            //   label: 'SETTINGS',
-            // ),
-            BottomNavigationBarItem(
-              icon: Padding(
-                padding: EdgeInsets.only(bottom: 4),
-                child: Icon(Icons.history),
-              ),
-              label: 'HISTORY',
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
             ),
           ],
+        ),
+        child: Consumer<NetworkScannerProvider>(
+          builder: (context, scannerVM, _) {
+            final onlineCount = scannerVM.getOnlineDevices().length;
+            final showBadge = onlineCount > 0;
+
+            return BottomNavigationBar(
+              currentIndex: _currentIndex,
+              onTap: (index) {
+                if (mounted) {
+                  setState(() => _currentIndex = index);
+                }
+              },
+              type: BottomNavigationBarType.fixed,
+              backgroundColor: Colors.white,
+              elevation: 0,
+              selectedItemColor: const Color(0xFF0075FF),
+              unselectedItemColor: const Color(0xFF94A3B8),
+              selectedLabelStyle: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.2,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.2,
+              ),
+              items: [
+                const BottomNavigationBarItem(
+                  icon: Padding(
+                    padding: EdgeInsets.only(bottom: 4),
+                    child: Icon(Icons.grid_view_rounded, size: 22),
+                  ),
+                  label: 'Dashboard',
+                ),
+                BottomNavigationBarItem(
+                  icon: Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Badge(
+                      isLabelVisible: showBadge,
+                      label: Text(
+                        '$onlineCount',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                      backgroundColor: const Color(0xFF4F46E5),
+                      child: const Icon(Icons.devices_rounded, size: 22),
+                    ),
+                  ),
+                  label: 'Devices',
+                ),
+                const BottomNavigationBarItem(
+                  icon: Padding(
+                    padding: EdgeInsets.only(bottom: 4),
+                    child: Icon(Icons.build_circle_rounded, size: 22),
+                  ),
+                  label: 'Tools',
+                ),
+                const BottomNavigationBarItem(
+                  icon: Padding(
+                    padding: EdgeInsets.only(bottom: 4),
+                    child: Icon(Icons.history_rounded, size: 22),
+                  ),
+                  label: 'History',
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

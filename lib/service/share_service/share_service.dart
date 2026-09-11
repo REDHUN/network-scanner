@@ -83,6 +83,22 @@ class ShareService {
     }
   }
 
+  /// Share arbitrary text (e.g. Ping or Traceroute reports)
+  Future<void> shareText(String text, {String? subject}) async {
+    try {
+      if (text.isEmpty) return;
+      await Share.share(
+        text,
+        subject: subject,
+      );
+    } catch (e) {
+      try {
+        await copyToClipboard(text);
+      } catch (_) {}
+      rethrow;
+    }
+  }
+
   /// Format basic device information (public method)
   String formatDeviceInfo(ScannedDevice device) {
     return _formatDeviceInfo(device);

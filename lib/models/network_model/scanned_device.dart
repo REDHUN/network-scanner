@@ -32,6 +32,24 @@ class ScannedDevice {
     return Icons.devices;
   }
 
+  ScannedDevice copyWith({
+    String? ip,
+    String? mac,
+    String? name,
+    String? mdns,
+    bool? isSelf,
+    bool? isGateway,
+  }) {
+    return ScannedDevice(
+      ip: ip ?? this.ip,
+      mac: mac ?? this.mac,
+      name: name ?? this.name,
+      mdns: mdns ?? this.mdns,
+      isSelf: isSelf ?? this.isSelf,
+      isGateway: isGateway ?? this.isGateway,
+    );
+  }
+
   @override
   bool operator ==(Object other) =>
       other is ScannedDevice && other.ip == ip;

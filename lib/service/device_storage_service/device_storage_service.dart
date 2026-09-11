@@ -432,4 +432,25 @@ class DeviceStorageService {
       return [];
     }
   }
+
+  /// Delete an offline device from current router data
+  Future<void> deleteOfflineDevice(String ip) async {
+    try {
+      final currentRouterId = await getCurrentRouterId();
+      if (currentRouterId == null) return;
+
+      final allData = await _getAllRouterData();
+      final routerData = allData[currentRouterId];
+      if (routerData == null) return;
+
+      final updatedDevices =
+          routerData.devices.where((d) => d.ip != ip).toList();
+      final updatedRouterData = routerData.copyWith(devices: updatedDevices);
+      allData[currentRouterId] = updatedRouterData;
+      await _saveAllRouterData(allData);
+      log('Deleted offline device $ip from router $currentRouterId');
+    } catch (e) {
+      log('Error deleting offline device $ip: $e');
+    }
+  }
 }
