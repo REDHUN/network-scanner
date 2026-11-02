@@ -2,7 +2,11 @@ package com.example.flutter_network_scanner
 
 import android.content.Context
 import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.LinkProperties
+import android.net.LinkAddress
+import android.net.nsd.NsdManager
+import android.net.nsd.NsdServiceInfo
 import android.net.wifi.WifiManager
 import android.os.Handler
 import android.os.Looper
@@ -12,13 +16,17 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import java.io.BufferedReader
-import java.io.FileReader
 import java.io.InputStreamReader
 import java.net.*
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 import java.util.regex.Pattern
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.min
 
 /** FlutterNetworkScannerPlugin */
@@ -33,6 +41,28 @@ class FlutterNetworkScannerPlugin : FlutterPlugin, MethodCallHandler {
         var deviceType: String? = null
     )
 
+    private data class LocalNetworkInfo(
+        val ip: Inet4Address,
+        val prefixLength: Int,
+        val subnet: String,
+        val gateway: String?,
+        val interfaceName: String,
+        val ssid: String?
+    )
+
+    private class ScanCancelledException(message: String) : IllegalStateException(message)
+
+    companion object {
+        private const val DEFAULT_SCAN_TIMEOUT_MS = 250
+        private const val DEFAULT_PING_TIMEOUT_MS = 500
+        private const val DEFAULT_PORT_TIMEOUT_MS = 300
+        private const val MAX_TIMEOUT_MS = 10_000
+        private const val MAX_SCAN_HOSTS = 4_096L
+        private const val SCAN_MAX_DURATION_MS = 20_000L
+        private const val PORT_SCAN_MAX_DURATION_MS = 30_000L
+        private val DEFAULT_PORTS = listOf(80, 443, 22, 21, 8080, 445, 53, 3389, 8008, 9100)
+    }
+
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         context = flutterPluginBinding.applicationContext
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "flutter_network_scanner")
@@ -42,7 +72,12 @@ class FlutterNetworkScannerPlugin : FlutterPlugin, MethodCallHandler {
     override fun onMethodCall(call: MethodCall, result: Result) {
         when (call.method) {
             "scanNetwork" -> {
-                val timeout = (call.argument<Int>("timeoutMs") ?: 250)
+                val timeout = try {
+                    normalizeTimeout(call.argument<Any?>("timeoutMs"), DEFAULT_SCAN_TIMEOUT_MS)
+                } catch (e: IllegalArgumentException) {
+                    result.error("INVALID_ARGS", e.message, null)
+                    return
+                }
                 Thread {
                     try {
                         val devices = scanSubnet(timeout)
@@ -68,7 +103,12 @@ class FlutterNetworkScannerPlugin : FlutterPlugin, MethodCallHandler {
 
             "pingHost" -> {
                 val ip = call.argument<String>("ip")
-                val timeout = call.argument<Int>("timeoutMs") ?: 500
+                val timeout = try {
+                    normalizeTimeout(call.argument<Any?>("timeoutMs"), DEFAULT_PING_TIMEOUT_MS)
+                } catch (e: IllegalArgumentException) {
+                    result.error("INVALID_ARGS", e.message, null)
+                    return
+                }
                 if (ip == null) {
                     result.error("INVALID_ARGS", "IP cannot be null", null)
                     return
@@ -89,8 +129,22 @@ class FlutterNetworkScannerPlugin : FlutterPlugin, MethodCallHandler {
 
             "scanPorts" -> {
                 val ip = call.argument<String>("ip")
-                val ports = call.argument<List<Int>>("ports") ?: listOf(80, 443, 22, 21, 8080, 445, 53, 3389)
-                val timeout = call.argument<Int>("timeoutMs") ?: 300
+                val ports = try {
+                    normalizePorts(call.argument<Any?>("ports"))
+                } catch (e: IllegalArgumentException) {
+                    result.error("INVALID_ARGS", e.message, null)
+                    return
+                }
+                val timeout = try {
+                    normalizeTimeout(call.argument<Any?>("timeoutMs"), DEFAULT_PORT_TIMEOUT_MS)
+                } catch (e: IllegalArgumentException) {
+                    result.error("INVALID_ARGS", e.message, null)
+                    return
+                }
+                if (ports.isEmpty()) {
+                    result.success(emptyList<Int>())
+                    return
+                }
                 if (ip == null) {
                     result.error("INVALID_ARGS", "IP cannot be null", null)
                     return
@@ -117,57 +171,8 @@ class FlutterNetworkScannerPlugin : FlutterPlugin, MethodCallHandler {
         channel.setMethodCallHandler(null)
     }
 
-    private fun getLocalNetworkInfo(): Map<String, Any?> {
-        var localIp = "127.0.0.1"
-        var subnet = "255.255.255.0"
-        var gateway: String? = null
-        var ifaceName = "wlan0"
-
-        try {
-            val interfaces = NetworkInterface.getNetworkInterfaces()
-            while (interfaces.hasMoreElements()) {
-                val iface = interfaces.nextElement()
-                if (iface.isLoopback || !iface.isUp) continue
-
-                for (addr in iface.interfaceAddresses) {
-                    val inetAddr = addr.address
-                    if (inetAddr is Inet4Address && !inetAddr.isLoopbackAddress) {
-                        localIp = inetAddr.hostAddress ?: localIp
-                        ifaceName = iface.name
-                        val prefixLength = addr.networkPrefixLength.toInt()
-                        subnet = prefixLengthToSubnet(prefixLength)
-                        break
-                    }
-                }
-                if (localIp != "127.0.0.1") break
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
-        try {
-            val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
-            val activeNetwork = cm?.activeNetwork
-            val linkProps: LinkProperties? = cm?.getLinkProperties(activeNetwork)
-            if (linkProps != null) {
-                for (route in linkProps.routes) {
-                    if (route.isDefaultRoute && route.gateway is Inet4Address) {
-                        gateway = route.gateway?.hostAddress
-                        break
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
-        if (gateway == null && localIp != "127.0.0.1") {
-            val parts = localIp.split(".")
-            if (parts.size == 4) {
-                gateway = "${parts[0]}.${parts[1]}.${parts[2]}.1"
-            }
-        }
-
+    private fun getLocalNetworkInfo(): Map<String, Any?>? {
+        val info = findLocalNetworkInfo() ?: return null
         var ssid: String? = null
         try {
             val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
@@ -180,44 +185,134 @@ class FlutterNetworkScannerPlugin : FlutterPlugin, MethodCallHandler {
         }
 
         return mapOf(
-            "ip" to localIp,
-            "subnet" to subnet,
-            "gateway" to gateway,
-            "interface" to ifaceName,
+            "ip" to info.ip.hostAddress,
+            "subnet" to info.subnet,
+            "gateway" to info.gateway,
+            "interface" to info.interfaceName,
             "ssid" to ssid
         )
     }
 
+    /** Uses the active ConnectivityManager network as the sole source of interface selection. */
+    private fun findLocalNetworkInfo(): LocalNetworkInfo? {
+        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            ?: return null
+        // The default network can be a VPN or cellular even while Wi-Fi is
+        // connected. Prefer the Wi-Fi transport for local discovery.
+        val wifiNetwork = cm.allNetworks.firstOrNull { network ->
+            cm.getNetworkCapabilities(network)?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
+        } ?: return null
+        val linkProperties: LinkProperties = cm.getLinkProperties(wifiNetwork) ?: return null
+        val interfaceName = linkProperties.interfaceName ?: return null
+        val linkAddress: LinkAddress = linkProperties.linkAddresses.firstOrNull { address ->
+            val inetAddress = address.address
+            inetAddress is Inet4Address &&
+                !inetAddress.isLoopbackAddress &&
+                !inetAddress.isLinkLocalAddress &&
+                !inetAddress.isAnyLocalAddress
+        } ?: return null
+        val ip = linkAddress.address as? Inet4Address ?: return null
+        val prefixLength = linkAddress.prefixLength
+        if (prefixLength !in 0..32) return null
+
+        // Confirm the interface still exists and is usable when the platform exposes it.
+        try {
+            val networkInterface = NetworkInterface.getByName(interfaceName)
+            if (networkInterface != null && (networkInterface.isLoopback || !networkInterface.isUp)) {
+                return null
+            }
+        } catch (_: Exception) {
+            return null
+        }
+
+        val gateway = linkProperties.routes.firstOrNull { route ->
+            route.isDefaultRoute && route.gateway is Inet4Address &&
+                !(route.gateway as Inet4Address).isAnyLocalAddress
+        }?.gateway?.hostAddress
+
+        return LocalNetworkInfo(
+            ip = ip,
+            prefixLength = prefixLength,
+            subnet = prefixLengthToSubnet(prefixLength),
+            gateway = gateway,
+            interfaceName = interfaceName,
+            ssid = null
+        )
+    }
+
     private fun prefixLengthToSubnet(prefix: Int): String {
-        val mask = (0xffffffffL shl (32 - prefix)) and 0xffffffffL
+        val mask = prefixLengthToMask(prefix)
         return "${(mask shr 24) and 0xff}.${(mask shr 16) and 0xff}.${(mask shr 8) and 0xff}.${mask and 0xff}"
     }
 
+    private fun prefixLengthToMask(prefix: Int): Long {
+        require(prefix in 0..32)
+        return if (prefix == 0) 0L else (0xffffffffL shl (32 - prefix)) and 0xffffffffL
+    }
+
     private fun scanSubnet(timeoutMs: Int): List<Map<String, Any?>> {
-        val netInfo = getLocalNetworkInfo()
-        val localIp = netInfo["ip"] as? String ?: "192.168.1.1"
-        val gatewayIp = netInfo["gateway"] as? String
+        val netInfo = findLocalNetworkInfo() ?: return emptyList()
+        val localIp = netInfo.ip.hostAddress ?: return emptyList()
+        val gatewayIp = netInfo.gateway
+        val localIpLong = ipToLong(localIp)
+        val mask = prefixLengthToMask(netInfo.prefixLength)
+        val networkAddress = localIpLong and mask
+        val broadcastAddress = networkAddress or (mask.inv() and 0xffffffffL)
+        val firstHost = if (netInfo.prefixLength >= 31) networkAddress else networkAddress + 1
+        val lastHost = if (netInfo.prefixLength >= 31) broadcastAddress else broadcastAddress - 1
+        val hostCount = if (lastHost >= firstHost) lastHost - firstHost + 1 else 0
+        if (hostCount <= 0) return emptyList()
+        if (hostCount > MAX_SCAN_HOSTS) {
+            throw ScanCancelledException("Active subnet contains $hostCount hosts; refusing an unsafe scan (maximum $MAX_SCAN_HOSTS)")
+        }
+        val commonPorts = listOf(
+            80, 443, 22, 445, 8080, 53, 8008, 8009, 8443, 62078,
+            9100, 3000, 5000, 554, 5555, 7000, 7100, 7236, 49152, 49153
+        )
 
-        val parts = localIp.split(".")
-        if (parts.size != 4) return emptyList()
-
-        val subnetPrefix = "${parts[0]}.${parts[1]}.${parts[2]}"
-        val commonPorts = listOf(80, 443, 22, 445, 8080, 53, 8008, 62078, 9100, 3000, 5000, 8443)
+        // Snapshot before sending any probes. Unlike a cached STALE entry,
+        // a neighbor that first appears during this scan has supplied a MAC in
+        // response to this sweep; keep that evidence even if it ages to STALE
+        // before we take the final snapshot.
+        val neighborsBefore = readIpNeighborCache(netInfo.interfaceName, includeStale = true)
 
         val ssdpMetaMap = ConcurrentHashMap<String, DiscoveredMeta>()
+        val mdnsMetaMap = ConcurrentHashMap<String, DiscoveredMeta>()
         val ssdpThread = Thread {
-            discoverSsdpDevices(ssdpMetaMap)
+            discoverSsdpDevicesWithMulticastLock(
+                ssdpMetaMap,
+                netInfo.ip,
+                netInfo.interfaceName
+            )
+        }
+        val mdnsThread = Thread {
+            discoverMdnsServices(mdnsMetaMap, localIpLong, mask)
         }
         ssdpThread.start()
+        mdnsThread.start()
 
-        val arpMap = readArpCache()
+        // Snapshot the Wi-Fi neighbor table during the sweep, not only at its
+        // end. A quiet host can answer ARP near the beginning but transition to
+        // STALE before the TCP sweep finishes. Only REACHABLE entries count.
+        val arpMap = ConcurrentHashMap<String, String>()
+        val sampling = AtomicBoolean(true)
+        val neighborSampler = Executors.newSingleThreadScheduledExecutor()
+        neighborSampler.scheduleWithFixedDelay({
+            for ((ip, mac) in readNeighborCache(netInfo.interfaceName)) {
+                if (!sampling.get()) break
+                if (ipToLong(ip) in firstHost..lastHost) arpMap[ip] = mac
+            }
+        }, 500, 1_000, TimeUnit.MILLISECONDS)
         val discoveredDevices = ConcurrentHashMap<String, Map<String, Any?>>()
-        val executor = Executors.newFixedThreadPool(64)
+        val executor = Executors.newFixedThreadPool(min(hostCount.toInt(), 64))
+        val activeSockets = ConcurrentHashMap.newKeySet<Socket>()
+        val cancelled = AtomicBoolean(false)
 
-        for (i in 1..254) {
-            val targetIp = "$subnetPrefix.$i"
+        for (address in firstHost..lastHost) {
+            val targetIp = longToIp(address)
             executor.execute {
                 try {
+                    if (cancelled.get() || Thread.currentThread().isInterrupted) return@execute
                     val isCurrent = targetIp == localIp
                     val isGateway = targetIp == gatewayIp
 
@@ -232,13 +327,21 @@ class FlutterNetworkScannerPlugin : FlutterPlugin, MethodCallHandler {
                         val start = System.currentTimeMillis()
                         val inetAddress = InetAddress.getByName(targetIp)
 
-                        if (inetAddress.isReachable(timeoutMs)) {
+                        // A small UDP datagram forces Android to resolve the target's
+                        // L2 neighbour even when the target silently drops ICMP/TCP.
+                        // The refreshed ARP table is the authoritative signal for
+                        // LAN presence in that case.
+                        touchHostOnWifi(targetIp, localIp)
+
+                        if (!cancelled.get() && inetAddress.isReachable(timeoutMs)) {
                             reachable = true
                             pingMs = System.currentTimeMillis() - start
                         }
 
                         for (port in commonPorts) {
+                            if (cancelled.get() || Thread.currentThread().isInterrupted) return@execute
                             val socket = Socket()
+                            activeSockets.add(socket)
                             try {
                                 socket.connect(InetSocketAddress(targetIp, port), min(timeoutMs, 180))
                                 openPorts.add(port)
@@ -247,27 +350,26 @@ class FlutterNetworkScannerPlugin : FlutterPlugin, MethodCallHandler {
                                     pingMs = System.currentTimeMillis() - start
                                 }
                             } catch (_: Exception) {
+                                // A refused port is not enough to classify a host
+                                // during a subnet sweep. Android may report a local
+                                // routing/ICMP error as ConnectException, which would
+                                // turn every unused address into a fake device.
                             } finally {
+                                activeSockets.remove(socket)
                                 try { socket.close() } catch (_: Exception) {}
                             }
                         }
 
-                        if (!reachable && arpMap.containsKey(targetIp)) {
-                            val arpMac = arpMap[targetIp]
-                            if (arpMac != null && arpMac != "00:00:00:00:00:00") {
-                                reachable = true
-                                pingMs = 5L
-                            }
-                        }
                     }
 
                     if (reachable) {
                         var hostName: String? = null
                         var vendorName: String? = null
 
+                        if (cancelled.get() || Thread.currentThread().isInterrupted) return@execute
                         try {
                             val host = InetAddress.getByName(targetIp).canonicalHostName
-                            if (!host.equals(targetIp, ignoreCase = true)) {
+                            if (!host.equals(targetIp, ignoreCase = true) && isUsableHostname(host)) {
                                 hostName = host
                             }
                         } catch (_: Exception) {}
@@ -276,7 +378,7 @@ class FlutterNetworkScannerPlugin : FlutterPlugin, MethodCallHandler {
                             hostName = queryNetBiosName(targetIp)
                         }
 
-                        if (openPorts.contains(80) || openPorts.contains(8080) || openPorts.contains(8008)) {
+                        if (!cancelled.get() && (openPorts.contains(80) || openPorts.contains(8080) || openPorts.contains(8008))) {
                             val webInfo = fetchHttpTitleAndServer(targetIp, openPorts)
                             if (webInfo != null) {
                                 if (hostName == null && webInfo.first != null) {
@@ -309,7 +411,7 @@ class FlutterNetworkScannerPlugin : FlutterPlugin, MethodCallHandler {
                             }
                         }
 
-                        val mac = arpMap[targetIp]
+                        val mac = null
                         val deviceType = inferDeviceType(isGateway, isCurrent, openPorts, hostName)
                         if (vendorName == null) {
                             vendorName = inferVendorFromMacOrPorts(mac, openPorts)
@@ -334,17 +436,75 @@ class FlutterNetworkScannerPlugin : FlutterPlugin, MethodCallHandler {
         }
 
         executor.shutdown()
-        executor.awaitTermination(20, TimeUnit.SECONDS)
-
         try {
-            ssdpThread.join(1000)
-        } catch (_: Exception) {}
+            awaitExecutor(executor, SCAN_MAX_DURATION_MS, activeSockets, cancelled, "Network scan timed out")
+        } finally {
+            sampling.set(false)
+            neighborSampler.shutdownNow()
+            stopSsdpThread(ssdpThread)
+            stopSsdpThread(mdnsThread)
+        }
 
-        for ((ssdpIp, meta) in ssdpMetaMap) {
+        arpMap.putAll(readNeighborCache(netInfo.interfaceName))
+        if (neighborsBefore != null) {
+            val neighborsAfter = readIpNeighborCache(netInfo.interfaceName, includeStale = true)
+            if (neighborsAfter != null) {
+                for ((ip, mac) in newlyObservedNeighbors(neighborsBefore, neighborsAfter)) {
+                    if (ipToLong(ip) in firstHost..lastHost) {
+                        arpMap.putIfAbsent(ip, mac)
+                    }
+                }
+            }
+        }
+        for ((arpIp, arpMac) in arpMap) {
+            val address = ipToLong(arpIp)
+            if (address !in firstHost..lastHost || arpIp == localIp || arpMac == "00:00:00:00:00:00") {
+                continue
+            }
+            val existing = discoveredDevices[arpIp]
+            if (existing != null) {
+                if (existing["mac"] == null) {
+                    val updated = HashMap(existing)
+                    updated["mac"] = arpMac
+                    if (updated["vendor"] == null) {
+                        updated["vendor"] = inferVendorFromMacOrPorts(arpMac, emptyList())
+                    }
+                    discoveredDevices[arpIp] = updated
+                }
+                continue
+            }
+            val vendor = inferVendorFromMacOrPorts(arpMac, emptyList())
+            discoveredDevices[arpIp] = mapOf(
+                "ip" to arpIp,
+                "hostname" to null,
+                "openPorts" to emptyList<Int>(),
+                "mac" to arpMac,
+                "vendor" to vendor,
+                "pingMs" to 5L,
+                "deviceType" to "generic",
+                "isCurrentDevice" to false,
+                "isGateway" to (arpIp == gatewayIp)
+            )
+        }
+
+        val discoveryMeta = HashMap(ssdpMetaMap)
+        for ((ip, mdns) in mdnsMetaMap) {
+            val previous = discoveryMeta[ip]
+            discoveryMeta[ip] = if (previous == null) mdns else DiscoveredMeta(
+                previous.friendlyName ?: mdns.friendlyName,
+                previous.manufacturer ?: mdns.manufacturer,
+                previous.modelName ?: mdns.modelName,
+                previous.deviceType ?: mdns.deviceType
+            )
+        }
+        for ((ssdpIp, meta) in discoveryMeta) {
+            if (ipToLong(ssdpIp) !in firstHost..lastHost) continue
             val existing = discoveredDevices[ssdpIp]
             if (existing != null) {
                 val updated = HashMap(existing)
-                if (meta.friendlyName != null && (updated["hostname"] == null || updated["hostname"] == ssdpIp)) {
+                if (meta.friendlyName != null &&
+                    (!isUsableHostname(updated["hostname"] as? String) ||
+                        updated["hostname"] == ssdpIp)) {
                     updated["hostname"] = meta.friendlyName
                 }
                 if (meta.manufacturer != null && updated["vendor"] == null) {
@@ -366,6 +526,38 @@ class FlutterNetworkScannerPlugin : FlutterPlugin, MethodCallHandler {
                     "isCurrentDevice" to (ssdpIp == localIp),
                     "isGateway" to (ssdpIp == gatewayIp)
                 )
+            }
+        }
+
+        // The system resolver can use public DNS and miss DHCP names hosted by
+        // the Wi-Fi router. Query its PTR records only for confirmed devices;
+        // DNS alone must never add an address to the online list.
+        if (gatewayIp != null && gatewayIp != localIp) {
+            val gateway = try { InetAddress.getByName(gatewayIp) } catch (_: Exception) { null }
+            if (gateway is Inet4Address) {
+                val dnsExecutor = Executors.newFixedThreadPool(8)
+                try {
+                    for (ip in discoveredDevices.keys) {
+                        if (ip == localIp || isUsableHostname(discoveredDevices[ip]?.get("hostname") as? String)) continue
+                        dnsExecutor.execute {
+                            val name = GatewayPtrLookup.query(gateway, netInfo.ip, ip)
+                            if (name != null) {
+                                discoveredDevices.computeIfPresent(ip) { _, existing ->
+                                    if (isUsableHostname(existing["hostname"] as? String)) existing
+                                    else HashMap(existing).apply { put("hostname", name) }
+                                }
+                            }
+                        }
+                    }
+                } finally {
+                    dnsExecutor.shutdown()
+                    try {
+                        if (!dnsExecutor.awaitTermination(2, TimeUnit.SECONDS)) dnsExecutor.shutdownNow()
+                    } catch (_: InterruptedException) {
+                        dnsExecutor.shutdownNow()
+                        Thread.currentThread().interrupt()
+                    }
+                }
             }
         }
 
@@ -396,9 +588,13 @@ class FlutterNetworkScannerPlugin : FlutterPlugin, MethodCallHandler {
     private fun scanHostPorts(ip: String, ports: List<Int>, timeoutMs: Int): List<Int> {
         val openPorts = mutableListOf<Int>()
         val executor = Executors.newFixedThreadPool(min(ports.size, 32))
+        val activeSockets = ConcurrentHashMap.newKeySet<Socket>()
+        val cancelled = AtomicBoolean(false)
         for (port in ports) {
             executor.submit {
+                if (cancelled.get() || Thread.currentThread().isInterrupted) return@submit
                 val socket = Socket()
+                activeSockets.add(socket)
                 try {
                     socket.connect(InetSocketAddress(ip, port), timeoutMs)
                     synchronized(openPorts) {
@@ -406,34 +602,295 @@ class FlutterNetworkScannerPlugin : FlutterPlugin, MethodCallHandler {
                     }
                 } catch (_: Exception) {
                 } finally {
+                    activeSockets.remove(socket)
                     try { socket.close() } catch (_: Exception) {}
                 }
             }
         }
         executor.shutdown()
-        executor.awaitTermination(5, TimeUnit.SECONDS)
+        awaitExecutor(executor, PORT_SCAN_MAX_DURATION_MS, activeSockets, cancelled, "Port scan timed out")
         return openPorts.sorted()
     }
 
-    private fun readArpCache(): Map<String, String> {
+    private fun normalizeTimeout(value: Any?, defaultValue: Int): Int {
+        if (value == null) return defaultValue
+        val number = value as? Number
+            ?: throw IllegalArgumentException("timeoutMs must be an integer")
+        val timeout = number.toLong()
+        if (number.toDouble() != timeout.toDouble()) {
+            throw IllegalArgumentException("timeoutMs must be an integer")
+        }
+        if (timeout !in 1..MAX_TIMEOUT_MS) {
+            throw IllegalArgumentException("timeoutMs must be between 1 and $MAX_TIMEOUT_MS milliseconds")
+        }
+        return timeout.toInt()
+    }
+
+    private fun normalizePorts(value: Any?): List<Int> {
+        if (value == null) return DEFAULT_PORTS
+        val rawPorts = value as? List<*>
+            ?: throw IllegalArgumentException("ports must be a list of integers")
+        return rawPorts.map { rawPort ->
+            val number = rawPort as? Number
+                ?: throw IllegalArgumentException("ports must contain only integers")
+            val port = number.toLong()
+            if (number.toDouble() != port.toDouble()) {
+                throw IllegalArgumentException("ports must contain only integers")
+            }
+            if (port !in 1..65535) {
+                throw IllegalArgumentException("ports must be between 1 and 65535")
+            }
+            port.toInt()
+        }.distinct()
+    }
+
+    /**
+     * Waits for every worker to stop before returning. If the bounded wait expires, all
+     * sockets and queued work are cancelled, then termination is awaited uninterruptibly so
+     * callers never receive a partial result while native workers remain active.
+     */
+    private fun awaitExecutor(
+        executor: ExecutorService,
+        timeoutMs: Long,
+        activeSockets: MutableSet<Socket>,
+        cancelled: AtomicBoolean,
+        timeoutMessage: String
+    ) {
+        try {
+            if (executor.awaitTermination(timeoutMs, TimeUnit.MILLISECONDS)) return
+        } catch (_: InterruptedException) {
+            cancelled.set(true)
+            executor.shutdownNow()
+            activeSockets.forEach { socket -> try { socket.close() } catch (_: Exception) {} }
+            awaitTerminationUninterruptibly(executor)
+            Thread.currentThread().interrupt()
+            throw ScanCancelledException("Network scan was cancelled")
+        }
+
+        cancelled.set(true)
+        executor.shutdownNow()
+        activeSockets.forEach { socket -> try { socket.close() } catch (_: Exception) {} }
+        awaitTerminationUninterruptibly(executor)
+        throw ScanCancelledException(timeoutMessage)
+    }
+
+    private fun awaitTerminationUninterruptibly(executor: ExecutorService) {
+        var interrupted = false
+        while (true) {
+            try {
+                if (executor.awaitTermination(1, TimeUnit.SECONDS)) break
+            } catch (_: InterruptedException) {
+                interrupted = true
+            }
+        }
+        if (interrupted) Thread.currentThread().interrupt()
+    }
+
+    private fun stopSsdpThread(thread: Thread) {
+        var interrupted = false
+        try {
+            thread.join(9_000)
+        } catch (_: InterruptedException) {
+            interrupted = true
+        }
+        if (thread.isAlive) thread.interrupt()
+        while (thread.isAlive) {
+            try {
+                thread.join()
+            } catch (_: InterruptedException) {
+                interrupted = true
+            }
+        }
+        if (interrupted) Thread.currentThread().interrupt()
+    }
+
+    private fun readNeighborCache(interfaceName: String, includeStale: Boolean = false): Map<String, String> {
+        // `ip neigh` includes a state. Do not fall back to /proc/net/arp here:
+        // that file has no freshness information and can contain devices that left
+        // the network days ago, which creates false online devices.
+        return readIpNeighborCache(interfaceName, includeStale) ?: emptyMap()
+    }
+
+    private fun readIpNeighborCache(interfaceName: String, includeStale: Boolean): Map<String, String>? {
         val map = HashMap<String, String>()
         try {
-            val br = BufferedReader(FileReader("/proc/net/arp"))
-            var line: String?
-            while (br.readLine().also { line = it } != null) {
-                val tokens = line?.split("\\s+".toRegex()) ?: continue
-                if (tokens.size >= 4 && tokens[0] != "IP") {
-                    val ip = tokens[0]
-                    val mac = tokens[3]
-                    if (mac != "00:00:00:00:00:00") {
-                        map[ip] = mac.uppercase()
+            val process = ProcessBuilder(
+                "/system/bin/ip",
+                "neigh",
+                "show",
+                "dev",
+                interfaceName
+            ).redirectErrorStream(true).start()
+            process.inputStream.bufferedReader().useLines { lines ->
+                lines.forEach { line ->
+                    val parts = line.trim().split("\\s+".toRegex())
+                    if (parts.size < 5) return@forEach
+                    val ip = parts.firstOrNull { value ->
+                        value.count { it == '.' } == 3 && value.all { it.isDigit() || it == '.' }
+                    } ?: return@forEach
+                    val macIndex = parts.indexOfFirst { value ->
+                        value.count { it == ':' } == 5 && value.length >= 17
+                    }
+                    val state = parts.lastOrNull()?.uppercase() ?: ""
+                    // A STALE entry is only useful when compared with the
+                    // pre-scan snapshot; by itself it is not proof of liveness.
+                    if (macIndex >= 0 && (state == "REACHABLE" || (includeStale && state == "STALE"))) {
+                        val mac = parts[macIndex].uppercase()
+                        if (mac != "00:00:00:00:00:00") {
+                            map[ip] = mac
+                        }
                     }
                 }
             }
-            br.close()
+            if (!process.waitFor(250, TimeUnit.MILLISECONDS) || process.exitValue() != 0) {
+                process.destroyForcibly()
+                return null
+            }
+            process.destroy()
         } catch (_: Exception) {
+            // Some Android builds do not expose the ip utility to applications.
+            return null
         }
         return map
+    }
+
+    private fun touchHostOnWifi(targetIp: String, localIp: String) {
+        try {
+            DatagramSocket().use { socket ->
+                socket.bind(InetSocketAddress(localIp, 0))
+                val address = InetAddress.getByName(targetIp)
+                val ports = intArrayOf(1900, 5353, 5555, 7000, 7236, 8009)
+                val payload = byteArrayOf(0)
+                for (port in ports) {
+                    socket.send(DatagramPacket(payload, payload.size, address, port))
+                }
+            }
+        } catch (_: Exception) {
+            // TCP/ICMP probing continues even when UDP neighbour resolution fails.
+        }
+    }
+
+    private fun discoverMdnsServices(
+        metaMap: ConcurrentHashMap<String, DiscoveredMeta>,
+        localIp: Long,
+        mask: Long
+    ) {
+        val manager = context.getSystemService(Context.NSD_SERVICE) as? NsdManager ?: return
+        val services = ConcurrentLinkedQueue<NsdServiceInfo>()
+        val listeners = mutableListOf<NsdManager.DiscoveryListener>()
+        val types = listOf(
+            "_spotify-connect._tcp.",
+            "_amzn-wplay._tcp.", "_amazon-alexa._tcp.",
+            "_companion-link._tcp.", "_apple-mobdev2._tcp.",
+            "_airplay._tcp.", "_raop._tcp.",
+            "_googlecast._tcp.",
+            "_http._tcp.", "_https._tcp.", "_homekit._tcp."
+        )
+        try {
+            for (type in types) {
+                val listener = object : NsdManager.DiscoveryListener {
+                    override fun onDiscoveryStarted(serviceType: String) {}
+                    override fun onServiceFound(service: NsdServiceInfo) {
+                        services.add(service)
+                    }
+                    override fun onServiceLost(service: NsdServiceInfo) {
+                        services.remove(service)
+                    }
+                    override fun onDiscoveryStopped(serviceType: String) {}
+                    override fun onStartDiscoveryFailed(serviceType: String, errorCode: Int) {
+                        try { manager.stopServiceDiscovery(this) } catch (_: Exception) {}
+                    }
+                    override fun onStopDiscoveryFailed(serviceType: String, errorCode: Int) {}
+                }
+                try {
+                    manager.discoverServices(type, NsdManager.PROTOCOL_DNS_SD, listener)
+                    listeners.add(listener)
+                } catch (_: Exception) {
+                    // Some Android versions limit simultaneous DNS-SD discoveries.
+                }
+            }
+            Thread.sleep(2_500)
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+        }
+
+        // A service advertisement is not a host address. Resolve it before
+        // reporting it, and only accept IPv4 addresses on the active Wi-Fi LAN.
+        try {
+        val seen = HashSet<String>()
+        var resolvedCount = 0
+        val orderedServices = services.toList().sortedBy { info ->
+            types.indexOfFirst { info.serviceType.startsWith(it, ignoreCase = true) }
+                .let { if (it < 0) types.size else it }
+        }
+        for (service in orderedServices) {
+            if (resolvedCount >= 16 || Thread.currentThread().isInterrupted) break
+            if (!seen.add("${service.serviceType}:${service.serviceName}")) continue
+            resolvedCount++
+            val result = AtomicReference<NsdServiceInfo?>()
+            val done = CountDownLatch(1)
+            try {
+                manager.resolveService(service, object : NsdManager.ResolveListener {
+                    override fun onServiceResolved(info: NsdServiceInfo) {
+                        result.set(info)
+                        done.countDown()
+                    }
+                    override fun onResolveFailed(info: NsdServiceInfo, errorCode: Int) {
+                        done.countDown()
+                    }
+                })
+                if (!done.await(650, TimeUnit.MILLISECONDS)) continue
+            } catch (_: Exception) {
+                continue
+            }
+            val resolved = result.get() ?: continue
+            val address = resolved.host as? Inet4Address ?: continue
+            val ip = address.hostAddress ?: continue
+            if ((ipToLong(ip) and mask) != (localIp and mask) || ipToLong(ip) == localIp) continue
+            val name = resolved.serviceName.takeIf { it.isNotBlank() }
+            val isPhone = name?.contains("iphone", ignoreCase = true) == true ||
+                name?.contains("ipad", ignoreCase = true) == true
+            val isAmazon = resolved.serviceType.contains("amzn", ignoreCase = true) ||
+                resolved.serviceType.contains("alexa", ignoreCase = true) ||
+                name?.contains("echo", ignoreCase = true) == true ||
+                name?.contains("alexa", ignoreCase = true) == true
+            val isApple = isPhone || resolved.serviceType.contains("airplay", ignoreCase = true) ||
+                resolved.serviceType.contains("raop", ignoreCase = true) ||
+                resolved.serviceType.contains("apple", ignoreCase = true) ||
+                resolved.serviceType.contains("companion-link", ignoreCase = true)
+            metaMap.compute(ip) { _, previous ->
+                DiscoveredMeta(
+                    friendlyName = previous?.friendlyName ?: name,
+                    manufacturer = previous?.manufacturer ?: when {
+                        isAmazon -> "Amazon"
+                        isApple -> "Apple"
+                        else -> null
+                    },
+                    deviceType = when {
+                        previous?.deviceType != null && previous.deviceType != "generic" -> previous.deviceType
+                        isAmazon -> "smart_speaker"
+                        isPhone -> "mobile"
+                        else -> previous?.deviceType ?: "generic"
+                    }
+                )
+            }
+        }
+        } finally {
+            for (listener in listeners) {
+                try { manager.stopServiceDiscovery(listener) } catch (_: Exception) {}
+            }
+        }
+    }
+
+    private fun isUsableHostname(hostname: String?): Boolean {
+        val value = hostname?.trim() ?: return false
+        if (value.isEmpty() || value.contains(':') || value.contains('@') || value.contains('%')) {
+            return false
+        }
+        if (value.matches(Regex("(?i)^[0-9a-f]{2}([-:][0-9a-f]{2}){5}$"))) {
+            return false
+        }
+        return true
     }
 
     private fun queryNetBiosName(ip: String): String? {
@@ -507,46 +964,142 @@ class FlutterNetworkScannerPlugin : FlutterPlugin, MethodCallHandler {
         return null
     }
 
-    private fun discoverSsdpDevices(metaMap: ConcurrentHashMap<String, DiscoveredMeta>) {
-        try {
-            val socket = DatagramSocket()
-            socket.soTimeout = 800
-
-            val ssdpQuery = "M-SEARCH * HTTP/1.1\r\n" +
-                    "HOST: 239.255.255.250:1900\r\n" +
-                    "MAN: \"ssdp:discover\"\r\n" +
-                    "MX: 1\r\n" +
-                    "ST: ssdp:all\r\n\r\n"
-
-            val sendData = ssdpQuery.toByteArray()
-            val packet = DatagramPacket(
-                sendData,
-                sendData.size,
-                InetAddress.getByName("239.255.255.250"),
-                1900
-            )
-            socket.send(packet)
-
-            val buffer = ByteArray(2048)
-            val endTime = System.currentTimeMillis() + 1000
-            while (System.currentTimeMillis() < endTime) {
-                try {
-                    val recvPacket = DatagramPacket(buffer, buffer.size)
-                    socket.receive(recvPacket)
-                    val response = String(recvPacket.data, 0, recvPacket.length)
-                    val senderIp = recvPacket.address.hostAddress ?: continue
-
-                    val locationMatcher = Pattern.compile("LOCATION:\\s*(http://[^\\r\\n]+)", Pattern.CASE_INSENSITIVE).matcher(response)
-                    if (locationMatcher.find()) {
-                        val locationUrl = locationMatcher.group(1)?.trim() ?: continue
-                        parseUpnpXmlDescription(locationUrl, senderIp, metaMap)
-                    }
-                } catch (_: SocketTimeoutException) {
-                    break
-                } catch (_: Exception) {}
+    private fun discoverSsdpDevicesWithMulticastLock(
+        metaMap: ConcurrentHashMap<String, DiscoveredMeta>,
+        localAddress: Inet4Address,
+        interfaceName: String
+    ) {
+        val wifiManager = context.applicationContext
+            .getSystemService(Context.WIFI_SERVICE) as? WifiManager
+        val multicastLock = try {
+            wifiManager?.createMulticastLock("flutter_network_scanner_ssdp")?.apply {
+                setReferenceCounted(false)
+                acquire()
             }
-            socket.close()
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+            null
+        }
+        try {
+            discoverSsdpDevices(metaMap, localAddress, interfaceName)
+        } finally {
+            try {
+                if (multicastLock?.isHeld == true) multicastLock.release()
+            } catch (_: Exception) {
+                // The lock may already have been released by the platform during teardown.
+            }
+        }
+    }
+
+    private fun discoverSsdpDevices(
+        metaMap: ConcurrentHashMap<String, DiscoveredMeta>,
+        localAddress: Inet4Address,
+        interfaceName: String
+    ) {
+        var socket: DatagramSocket? = null
+        try {
+            val networkInterface = NetworkInterface.getByName(interfaceName)
+            if (networkInterface != null && !networkInterface.isUp) return
+
+            // Bind to the active Wi-Fi address. A plain DatagramSocket may choose a
+            // VPN/cellular route on phones with multiple active networks, which makes
+            // multicast discovery of Echo/Fire TV devices silently fail.
+            socket = DatagramSocket(null).apply {
+                reuseAddress = true
+                bind(InetSocketAddress(localAddress, 0))
+                soTimeout = 450
+            }
+
+            val searchTargets = listOf(
+                "ssdp:all",
+                "upnp:rootdevice",
+                "urn:schemas-upnp-org:device:MediaRenderer:1",
+                "urn:schemas-upnp-org:device:MediaServer:1",
+                "urn:dial-multiscreen-org:service:dial:1"
+            )
+            val multicastAddress = InetAddress.getByName("239.255.255.250")
+            val endTime = System.currentTimeMillis() + 3_000
+            val descriptions = LinkedHashMap<String, String>()
+
+            // Send more than one round because sleeping media devices often do not
+            // answer the first multicast request after Wi-Fi becomes active.
+            repeat(2) { round ->
+                if (System.currentTimeMillis() >= endTime) return@repeat
+                for (searchTarget in searchTargets) {
+                    val ssdpQuery = "M-SEARCH * HTTP/1.1\r\n" +
+                        "HOST: 239.255.255.250:1900\r\n" +
+                        "MAN: \"ssdp:discover\"\r\n" +
+                        "MX: 1\r\n" +
+                        "ST: $searchTarget\r\n\r\n"
+                    val sendData = ssdpQuery.toByteArray()
+                    socket.send(
+                        DatagramPacket(sendData, sendData.size, multicastAddress, 1900)
+                    )
+                }
+
+                val buffer = ByteArray(4096)
+                val receiveUntil = minOf(endTime, System.currentTimeMillis() + 1_200L)
+                while (System.currentTimeMillis() < receiveUntil) {
+                    try {
+                        val recvPacket = DatagramPacket(buffer, buffer.size)
+                        socket.receive(recvPacket)
+                        val response = String(recvPacket.data, 0, recvPacket.length)
+                        val senderIp = recvPacket.address.hostAddress ?: continue
+                        if (!response.startsWith("HTTP/1.1 200", ignoreCase = true) &&
+                            !response.startsWith("HTTP/1.0 200", ignoreCase = true)) continue
+                        if (!response.contains("ST:", ignoreCase = true) &&
+                            !response.contains("USN:", ignoreCase = true)) continue
+
+                        // The response itself proves that this host is present; XML
+                        // fetching must not block the short UDP receive window.
+                        val meta = metaMap[senderIp] ?: DiscoveredMeta()
+                        val lowerResponse = response.lowercase()
+                        when {
+                            lowerResponse.contains("fire tv") || lowerResponse.contains("firetv") -> {
+                                meta.manufacturer = "Amazon"
+                                meta.deviceType = "smart_tv"
+                            }
+                            lowerResponse.contains("amazon") || lowerResponse.contains("alexa") ||
+                                lowerResponse.contains("echo") -> {
+                                meta.manufacturer = "Amazon"
+                                meta.deviceType = "smart_speaker"
+                            }
+                            lowerResponse.contains("dial") || lowerResponse.contains("mediarenderer") ->
+                                meta.deviceType = "smart_tv"
+                        }
+                        metaMap[senderIp] = meta
+
+                        val locationMatcher = Pattern.compile(
+                            "(?:LOCATION|AL)\\s*:\\s*(https?://[^\\r\\n]+)",
+                            Pattern.CASE_INSENSITIVE
+                        ).matcher(response)
+                        if (locationMatcher.find()) {
+                            val locationUrl = locationMatcher.group(1)?.trim() ?: continue
+                            // Ignore descriptions hosted elsewhere: they are not
+                            // evidence that the advertised sender owns that URL.
+                            val url = URL(locationUrl)
+                            if (url.host == senderIp) descriptions.putIfAbsent(senderIp, locationUrl)
+                        }
+                    } catch (_: SocketTimeoutException) {
+                        // Responses may arrive later within the MX window.
+                    } catch (_: Exception) {
+                    }
+                }
+                if (round == 0) Thread.sleep(150)
+            }
+            for ((ip, url) in descriptions.entries.take(6)) {
+                if (Thread.currentThread().isInterrupted) break
+                parseUpnpXmlDescription(url, ip, metaMap)
+            }
+            if (socket.isClosed.not()) {
+                socket.close()
+            }
+        } catch (_: Exception) {
+        } finally {
+            try {
+                socket?.close()
+            } catch (_: Exception) {
+            }
+        }
     }
 
     private fun parseUpnpXmlDescription(locationUrl: String, ip: String, metaMap: ConcurrentHashMap<String, DiscoveredMeta>) {
@@ -580,10 +1133,19 @@ class FlutterNetworkScannerPlugin : FlutterPlugin, MethodCallHandler {
                 val rawType = deviceTypeMatcher.group(1)?.lowercase() ?: ""
                 meta.deviceType = when {
                     rawType.contains("mediaserver") || rawType.contains("tv") -> "smart_tv"
+                    rawType.contains("mediarenderer") || rawType.contains("speaker") -> "smart_speaker"
                     rawType.contains("printer") -> "printer"
                     rawType.contains("router") || rawType.contains("gateway") -> "router"
                     else -> "generic"
                 }
+            }
+            val lowerXml = xml.lowercase()
+            if (lowerXml.contains("fire tv") || lowerXml.contains("firetv")) {
+                meta.manufacturer = meta.manufacturer ?: "Amazon"
+                meta.deviceType = "smart_tv"
+            } else if (lowerXml.contains("amazon") || lowerXml.contains("alexa") || lowerXml.contains("echo")) {
+                meta.manufacturer = meta.manufacturer ?: "Amazon"
+                meta.deviceType = "smart_speaker"
             }
             metaMap[ip] = meta
         } catch (_: Exception) {}
@@ -621,6 +1183,15 @@ class FlutterNetworkScannerPlugin : FlutterPlugin, MethodCallHandler {
     }
 
     private fun inferVendorFromMacOrPorts(mac: String?, openPorts: List<Int>): String? {
+        val normalizedMac = mac?.uppercase()?.replace("-", ":")
+        if (normalizedMac != null) {
+            when {
+                normalizedMac.startsWith("90:11:95") -> return "Amazon"
+                normalizedMac.startsWith("A0:02:DC") -> return "Amazon"
+                normalizedMac.startsWith("FC:65:DE") -> return "Amazon"
+                normalizedMac.startsWith("44:65:0D") -> return "Amazon"
+            }
+        }
         if (openPorts.contains(8008) || openPorts.contains(8009)) return "Google Inc."
         if (openPorts.contains(62078)) return "Apple Inc."
         if (openPorts.contains(9100)) return "Network Printer"
@@ -640,5 +1211,9 @@ class FlutterNetworkScannerPlugin : FlutterPlugin, MethodCallHandler {
         } catch (_: Exception) {
             0L
         }
+    }
+
+    private fun longToIp(value: Long): String {
+        return "${(value shr 24) and 0xff}.${(value shr 16) and 0xff}.${(value shr 8) and 0xff}.${value and 0xff}"
     }
 }

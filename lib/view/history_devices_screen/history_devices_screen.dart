@@ -51,7 +51,7 @@ class _HistoryDevicesScreenState extends State<HistoryDevicesScreen> {
                       padding: const EdgeInsets.only(right: 16),
                       child: const Icon(
                         Icons.arrow_back,
-                        color: Color(0xFF656CEB),
+                        color: Color(0xFF0075FF),
                         size: 26,
                       ),
                     ),
@@ -253,7 +253,7 @@ class _HistoryDevicesScreenState extends State<HistoryDevicesScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF656CEB) : Colors.white,
+          color: isSelected ? const Color(0xFF0075FF) : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
@@ -319,14 +319,14 @@ class _HistoryDevicesScreenState extends State<HistoryDevicesScreen> {
               height: 50,
               decoration: BoxDecoration(
                 color: device.isOnline
-                    ? const Color(0xFFEEEDFF)
+                    ? const Color(0xFFEFF6FF)
                     : const Color(0xFFE5E7EB),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(
                 _getStoredDeviceIcon(device),
                 color: device.isOnline
-                    ? const Color(0xFF656CEB)
+                    ? const Color(0xFF0075FF)
                     : const Color(0xFF6B7280),
                 size: 24,
               ),

@@ -29,10 +29,16 @@ class _ToolsScreenState extends State<ToolsScreen> {
   }
 
   Future<void> _openRouterAdmin(BuildContext context, String gatewayIp) async {
-    final cleanIp = gatewayIp.trim().replaceAll(RegExp(r'^https?://'), '').split('/')[0];
+    final cleanIp = gatewayIp
+        .trim()
+        .replaceAll(RegExp(r'^https?://'), '')
+        .split('/')[0];
     if (cleanIp.isEmpty || cleanIp == '0.0.0.0' || cleanIp == 'Unknown') {
       if (context.mounted) {
-        SnackbarUtils.showWarning(context, 'No active router gateway IP detected. Connect to Wi-Fi.');
+        SnackbarUtils.showWarning(
+          context,
+          'No active router gateway IP detected. Connect to Wi-Fi.',
+        );
       }
       return;
     }
@@ -44,7 +50,10 @@ class _ToolsScreenState extends State<ToolsScreen> {
       // 1. Try launching in external application (system browser)
       bool launched = false;
       try {
-        launched = await launchUrl(httpUri, mode: LaunchMode.externalApplication);
+        launched = await launchUrl(
+          httpUri,
+          mode: LaunchMode.externalApplication,
+        );
       } catch (_) {}
 
       // 2. Fallback to platform default
@@ -57,16 +66,25 @@ class _ToolsScreenState extends State<ToolsScreen> {
       // 3. Fallback to HTTPS
       if (!launched) {
         try {
-          launched = await launchUrl(httpsUri, mode: LaunchMode.externalApplication);
+          launched = await launchUrl(
+            httpsUri,
+            mode: LaunchMode.externalApplication,
+          );
         } catch (_) {}
       }
 
       if (!launched && context.mounted) {
-        SnackbarUtils.showError(context, 'Could not open router page http://$cleanIp');
+        SnackbarUtils.showError(
+          context,
+          'Could not open router page http://$cleanIp',
+        );
       }
     } catch (e) {
       if (context.mounted) {
-        SnackbarUtils.showError(context, 'Error launching router admin: ${e.toString()}');
+        SnackbarUtils.showError(
+          context,
+          'Error launching router admin: ${e.toString()}',
+        );
       }
     }
   }
@@ -96,7 +114,8 @@ class _ToolsScreenState extends State<ToolsScreen> {
     final allTools = [
       _ToolItem(
         title: 'Ping & Latency Tester',
-        description: 'Measure continuous ICMP/TCP ping, jitter, and packet loss in real-time.',
+        description:
+            'Measure continuous ICMP/TCP ping, jitter, and packet loss in real-time.',
         category: 'DIAGNOSTICS',
         icon: Icons.speed_rounded,
         iconColor: const Color(0xFF0075FF),
@@ -104,25 +123,32 @@ class _ToolsScreenState extends State<ToolsScreen> {
         badgeText: 'Essential',
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => PingScreen(initialHost: gatewayIp)),
+          MaterialPageRoute(
+            builder: (context) => PingScreen(initialHost: gatewayIp),
+          ),
         ),
       ),
       _ToolItem(
         title: 'Traceroute Visualizer',
-        description: 'Trace network hops from device to destination with interactive timeline.',
+        description:
+            'Trace network hops from device to destination with interactive timeline.',
         category: 'DIAGNOSTICS',
         icon: Icons.alt_route_rounded,
-        iconColor: const Color(0xFF8B5CF6),
-        bgColor: const Color(0xFFF5F3FF),
+        iconColor: const Color(0xFF0075FF),
+        bgColor: const Color(0xFFEFF6FF),
         badgeText: 'Visual',
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const TracerouteScreen(initialHost: 'google.com')),
+          MaterialPageRoute(
+            builder: (context) =>
+                const TracerouteScreen(initialHost: 'google.com'),
+          ),
         ),
       ),
       _ToolItem(
         title: 'Wake-on-LAN (WoL)',
-        description: 'Remotely power on computers, laptops, and NAS servers on the local network.',
+        description:
+            'Remotely power on computers, laptops, and NAS servers on the local network.',
         category: 'DIAGNOSTICS',
         icon: Icons.power_settings_new_rounded,
         iconColor: const Color(0xFF10B981),
@@ -135,7 +161,8 @@ class _ToolsScreenState extends State<ToolsScreen> {
       ),
       _ToolItem(
         title: 'Port Scanner',
-        description: 'Audit open TCP ports, detect running services, and evaluate security.',
+        description:
+            'Audit open TCP ports, detect running services, and evaluate security.',
         category: 'SECURITY',
         icon: Icons.security_rounded,
         iconColor: const Color(0xFFF59E0B),
@@ -145,7 +172,8 @@ class _ToolsScreenState extends State<ToolsScreen> {
       ),
       _ToolItem(
         title: 'Subnet & IP Calculator',
-        description: 'Calculate CIDR masks, broadcast address, usable host ranges, and binary.',
+        description:
+            'Calculate CIDR masks, broadcast address, usable host ranges, and binary.',
         category: 'CALCULATORS',
         icon: Icons.calculate_rounded,
         iconColor: const Color(0xFF06B6D4),
@@ -153,25 +181,32 @@ class _ToolsScreenState extends State<ToolsScreen> {
         badgeText: 'CIDR',
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => SubnetCalculatorScreen(initialIp: deviceIp)),
+          MaterialPageRoute(
+            builder: (context) => SubnetCalculatorScreen(initialIp: deviceIp),
+          ),
         ),
       ),
       _ToolItem(
         title: 'DNS & WHOIS Lookup',
-        description: 'Query A, AAAA, MX, TXT, NS, and CNAME records using Cloudflare/Google DoH.',
+        description:
+            'Query A, AAAA, MX, TXT, NS, and CNAME records using Cloudflare/Google DoH.',
         category: 'CALCULATORS',
         icon: Icons.dns_rounded,
-        iconColor: const Color(0xFF6366F1),
-        bgColor: const Color(0xFFEEF2FF),
+        iconColor: const Color(0xFF0075FF),
+        bgColor: const Color(0xFFEFF6FF),
         badgeText: 'DoH',
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const DnsLookupScreen(initialDomain: 'google.com')),
+          MaterialPageRoute(
+            builder: (context) =>
+                const DnsLookupScreen(initialDomain: 'google.com'),
+          ),
         ),
       ),
       _ToolItem(
         title: 'Router Admin Console',
-        description: 'Quick access to the router web management interface ($gatewayIp).',
+        description:
+            'Quick access to the router web management interface ($gatewayIp).',
         category: 'UTILITIES',
         icon: Icons.router_rounded,
         iconColor: const Color(0xFFEC4899),
@@ -185,12 +220,14 @@ class _ToolsScreenState extends State<ToolsScreen> {
         ? allTools
         : allTools.where((t) {
             return t.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                t.description.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                t.description.toLowerCase().contains(
+                  _searchQuery.toLowerCase(),
+                ) ||
                 t.category.toLowerCase().contains(_searchQuery.toLowerCase());
           }).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
@@ -201,78 +238,59 @@ class _ToolsScreenState extends State<ToolsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'NETWORK UTILITIES',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF0075FF),
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w700,
                         letterSpacing: 1.1,
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
+                    Text(
                       'Tools Suite',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFF0F172A),
-                        letterSpacing: -0.5,
-                      ),
+                      style: Theme.of(context).textTheme.displaySmall,
                     ),
                     const SizedBox(height: 6),
-                    const Text(
+                    Text(
                       'Comprehensive diagnostic and calculation tools for professional network analysis.',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF64748B),
-                        height: 1.35,
-                      ),
+                      style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     const SizedBox(height: 16),
 
                     // Search Bar
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.02),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
+                    TextField(
+                      controller: _searchController,
+                      onChanged: (val) => setState(() => _searchQuery = val),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF0F172A),
                       ),
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: (val) => setState(() => _searchQuery = val),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF0F172A),
+                      decoration: InputDecoration(
+                        hintText: 'Search tools (e.g. ping, subnet, dns)...',
+                        hintStyle: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF94A3B8),
+                          fontWeight: FontWeight.w500,
                         ),
-                        decoration: InputDecoration(
-                          hintText: 'Search tools (e.g. ping, subnet, dns)...',
-                          hintStyle: const TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF94A3B8),
-                            fontWeight: FontWeight.w500,
-                          ),
-                          prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF0075FF), size: 20),
-                          suffixIcon: _searchQuery.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear_rounded, size: 18),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    setState(() => _searchQuery = '');
-                                  },
-                                )
-                              : null,
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        prefixIcon: Icon(
+                          Icons.search_rounded,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 20,
+                        ),
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear_rounded, size: 18),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _searchQuery = '');
+                                },
+                              )
+                            : null,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
                         ),
                       ),
                     ),
@@ -285,13 +303,10 @@ class _ToolsScreenState extends State<ToolsScreen> {
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
               sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final tool = filteredTools[index];
-                    return _buildToolCard(tool);
-                  },
-                  childCount: filteredTools.length,
-                ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final tool = filteredTools[index];
+                  return _buildToolCard(tool);
+                }, childCount: filteredTools.length),
               ),
             ),
           ],
@@ -304,24 +319,21 @@ class _ToolsScreenState extends State<ToolsScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(
+            color: Theme.of(
+              context,
+            ).colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: tool.onTap,
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.02),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -349,15 +361,15 @@ class _ToolsScreenState extends State<ToolsScreen> {
                           Expanded(
                             child: Text(
                               tool.title,
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w800,
-                                color: Color(0xFF0F172A),
-                              ),
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w700),
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
                               color: tool.bgColor,
                               borderRadius: BorderRadius.circular(8),

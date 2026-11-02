@@ -151,8 +151,8 @@ class NetworkViewModel extends BaseViewModel {
     if (locationStatus == LocationStatus.serviceDisabled) {
       await openLocationSettings();
     } else if (locationStatus == LocationStatus.permissionDenied) {
-      final isPermanentlyDenied =
-          await _permissionService.isLocationPermissionPermanentlyDenied();
+      final isPermanentlyDenied = await _permissionService
+          .isLocationPermissionPermanentlyDenied();
       if (isPermanentlyDenied) {
         await openAppSettings();
       } else {

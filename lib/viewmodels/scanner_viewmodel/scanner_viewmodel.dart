@@ -12,8 +12,12 @@ import 'package:ip_tools/service/review_service/review_service.dart';
 enum ScanState { idle, scanning, done, error }
 
 class NetworkScannerProvider extends ChangeNotifier {
+  NetworkScannerProvider({ReviewPromptCallback? onReviewPromptEligible})
+    : _onReviewPromptEligible = onReviewPromptEligible;
+
   final _scanner = NetworkScannerService();
   final _storageService = DeviceStorageService();
+  final ReviewPromptCallback? _onReviewPromptEligible;
 
   ScanState state = ScanState.idle;
   final List<ScannedDevice> devices = [];
@@ -98,7 +102,9 @@ class NetworkScannerProvider extends ChangeNotifier {
                   // Enrich existing entry
                   devices[index] = devices[index].copyWith(
                     mac: newDev.mac ?? devices[index].mac,
-                    name: (newDev.name != null && !newDev.name!.startsWith('Device ('))
+                    name:
+                        (newDev.name != null &&
+                            !newDev.name!.startsWith('Device ('))
                         ? newDev.name
                         : devices[index].name,
                     mdns: newDev.mdns ?? devices[index].mdns,
@@ -125,7 +131,11 @@ class NetworkScannerProvider extends ChangeNotifier {
                 await _loadOfflineDevices();
               }
 
-              unawaited(ReviewService.instance.logScanAndCheckPrompt());
+              unawaited(
+                ReviewService.instance.logScanAndCheckPrompt(
+                  onPromptEligible: _onReviewPromptEligible,
+                ),
+              );
               notifyListeners();
             },
           );

@@ -1,9 +1,10 @@
- import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:ip_tools/common/appconstants/app_colors.dart';
 
 class SnackbarUtils {
   // App's primary dark color
   static const Color _primaryColor = Color(0xFF2C2C2E);
-  static const Color _accentColor = Color(0xFFD4A574);
+  static const Color _accentColor = AppColors.primary;
 
   /// Show a success snackbar with green accent
   static void showSuccess(
@@ -34,9 +35,7 @@ class SnackbarUtils {
         ),
         backgroundColor: _primaryColor,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
         duration: duration,
         elevation: 8,
@@ -73,9 +72,7 @@ class SnackbarUtils {
         ),
         backgroundColor: _primaryColor,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
         duration: duration,
         elevation: 8,
@@ -112,9 +109,7 @@ class SnackbarUtils {
         ),
         backgroundColor: _primaryColor,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
         duration: duration,
         elevation: 8,
@@ -151,9 +146,7 @@ class SnackbarUtils {
         ),
         backgroundColor: _primaryColor,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
         duration: duration,
         elevation: 8,
@@ -191,9 +184,7 @@ class SnackbarUtils {
         ),
         backgroundColor: _primaryColor,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
         duration: duration,
         elevation: 8,
@@ -221,9 +212,7 @@ class SnackbarUtils {
         ),
         backgroundColor: _primaryColor,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
         duration: duration,
         elevation: 8,
@@ -232,10 +221,7 @@ class SnackbarUtils {
   }
 
   /// Show a copy success snackbar (commonly used)
-  static void showCopySuccess(
-    BuildContext context,
-    String fieldName,
-  ) {
+  static void showCopySuccess(BuildContext context, String fieldName) {
     showSuccess(
       context,
       '$fieldName copied to clipboard',

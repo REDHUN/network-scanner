@@ -35,24 +35,22 @@ class _HomescreenState extends State<Homescreen> {
   Future<void> _startNetworkScan() async {
     final hasPermission =
         await PermissionManager.checkLocationPermissionForFeature(
-      context,
-      featureName: 'Network Scanning',
-    );
+          context,
+          featureName: 'Network Scanning',
+        );
 
     if (!mounted) return;
     if (hasPermission) {
       if (widget.onStartScan != null) {
         widget.onStartScan!();
       } else {
-        final mainNav =
-            context.findAncestorStateOfType<MainNavigationState>();
+        final mainNav = context.findAncestorStateOfType<MainNavigationState>();
         if (mainNav != null) {
           mainNav.switchTab(1, autoStartScan: true);
         } else {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) =>
-                  const DevicesScreen(autoStartScan: true),
+              builder: (context) => const DevicesScreen(autoStartScan: true),
             ),
           );
         }
@@ -63,7 +61,7 @@ class _HomescreenState extends State<Homescreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
@@ -73,7 +71,7 @@ class _HomescreenState extends State<Homescreen> {
             );
             await networkVM.forceRefresh();
           },
-          color: const Color(0xFF0075FF),
+          color: Theme.of(context).colorScheme.primary,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(20.0, 16.0, 20.0, 40.0),
@@ -81,76 +79,31 @@ class _HomescreenState extends State<Homescreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Top Subtitle
-                const Text(
+                Text(
                   'NETWORK UTILITY',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF0075FF),
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.w700,
                     letterSpacing: 1.1,
                   ),
                 ),
                 const SizedBox(height: 4),
 
                 // Dashboard Title & Scan Pill Button
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    const Text(
+                    Text(
                       'Dashboard',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFF0F172A),
-                        letterSpacing: -0.5,
-                      ),
+                      style: Theme.of(context).textTheme.displaySmall,
                     ),
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: _startNetworkScan,
-                        borderRadius: BorderRadius.circular(24),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(
-                              color: const Color(0xFFF1F5F9),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.04),
-                                blurRadius: 10,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.sync_rounded,
-                                color: Color(0xFF0075FF),
-                                size: 18,
-                              ),
-                              SizedBox(width: 6),
-                              Text(
-                                'Scan',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF0075FF),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                    FilledButton.tonalIcon(
+                      onPressed: _startNetworkScan,
+                      icon: const Icon(Icons.radar_rounded, size: 18),
+                      label: const Text('Scan'),
                     ),
                   ],
                 ),
@@ -161,7 +114,7 @@ class _HomescreenState extends State<Homescreen> {
                 Consumer<NetworkViewModel>(
                   builder: (context, vm, _) {
                     final wifiName = vm.getWifiDisplayName();
-                    final routerIp = vm.networkInfo?.gateway ?? '10.0.2.2';
+                    final routerIp = vm.networkInfo?.gateway ?? 'Not available';
                     final isConnected = vm.isNetworkActive;
 
                     return Container(
@@ -172,15 +125,17 @@ class _HomescreenState extends State<Homescreen> {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            Color(0xFF1E6BFF), // Vibrant blue
-                            Color(0xFF6366F1), // Indigo
-                            Color(0xFFA855F7), // Purple
+                            Color(0xFF0075FF),
+                            Color(0xFF1469DF),
+                            Color(0xFF1554AD),
                           ],
                           stops: [0.0, 0.65, 1.0],
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF6366F1).withValues(alpha: 0.35),
+                            color: const Color(
+                              0xFF0075FF,
+                            ).withValues(alpha: 0.35),
                             blurRadius: 22,
                             offset: const Offset(0, 10),
                           ),
@@ -203,7 +158,9 @@ class _HomescreenState extends State<Homescreen> {
                                     color: Colors.white.withValues(alpha: 0.15),
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.25),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.25,
+                                      ),
                                       width: 1.5,
                                     ),
                                   ),
@@ -229,8 +186,9 @@ class _HomescreenState extends State<Homescreen> {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF1E1B4B)
-                                          .withValues(alpha: 0.22),
+                                      color: const Color(
+                                        0xFF1E1B4B,
+                                      ).withValues(alpha: 0.22),
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: Row(
@@ -284,27 +242,30 @@ class _HomescreenState extends State<Homescreen> {
                                       icon: const Icon(
                                         Icons.location_on_rounded,
                                         size: 16,
-                                        color: Color(0xFF1E6BFF),
+                                        color: Color(0xFF0075FF),
                                       ),
                                       label: Text(
                                         vm.locationActionLabel,
                                         style: const TextStyle(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w700,
-                                          color: Color(0xFF1E6BFF),
+                                          color: Color(0xFF0075FF),
                                         ),
                                       ),
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.white,
-                                        foregroundColor: const Color(0xFF1E6BFF),
+                                        foregroundColor: const Color(
+                                          0xFF0075FF,
+                                        ),
                                         elevation: 0,
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 14,
                                           vertical: 8,
                                         ),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(14),
+                                          borderRadius: BorderRadius.circular(
+                                            14,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -314,7 +275,6 @@ class _HomescreenState extends State<Homescreen> {
 
                                   // Router Info
                                   Row(
-                                    mainAxisSize: MainAxisSize.min,
                                     children: [
                                       const Icon(
                                         Icons.settings_outlined,
@@ -322,12 +282,16 @@ class _HomescreenState extends State<Homescreen> {
                                         size: 15,
                                       ),
                                       const SizedBox(width: 6),
-                                      Text(
-                                        'Router: $routerIp',
-                                        style: const TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600,
+                                      Expanded(
+                                        child: Text(
+                                          'Router: $routerIp',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -418,7 +382,8 @@ class _HomescreenState extends State<Homescreen> {
                         _buildDetailRow(
                           icon: Icons.memory_rounded,
                           label: 'BSSID',
-                          value: (info?.bssid != null &&
+                          value:
+                              (info?.bssid != null &&
                                   info!.bssid!.isNotEmpty &&
                                   info.bssid != 'null')
                               ? info.bssid!
@@ -586,18 +551,8 @@ class _HomescreenState extends State<Homescreen> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: const Color(0xFFF1F5F9),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Column(children: children),
     );
@@ -615,10 +570,7 @@ class _HomescreenState extends State<Homescreen> {
 
   Widget _buildStatusPill(bool isOnline) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 4,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: isOnline ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2),
         borderRadius: BorderRadius.circular(12),
@@ -659,80 +611,99 @@ class _HomescreenState extends State<Homescreen> {
     Widget? customValueWidget,
   }) {
     final isNA = value == 'N/A' || value == '-' || value.isEmpty;
+    final valueWidget =
+        customValueWidget ??
+        Text(
+          value,
+          textAlign: TextAlign.right,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: isNA ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+            height: 1.25,
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        );
+    final iconWidget = Container(
+      width: 38,
+      height: 38,
+      decoration: const BoxDecoration(
+        color: Color(0xFFEFF6FF),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(icon, color: const Color(0xFF0075FF), size: 20),
+    );
+    final labelWidget = Text(
+      label,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+      style: const TextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF0F172A),
+      ),
+    );
 
     return InkWell(
       onTap: isNA ? null : () => _copyToClipboard(value, label),
       borderRadius: BorderRadius.circular(20),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 14.0),
-        child: Row(
-          children: [
-            // Circular Icon Container
-            Container(
-              width: 38,
-              height: 38,
-              decoration: const BoxDecoration(
-                color: Color(0xFFEFF6FF), // Soft blue
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Icon(
-                  icon,
-                  color: const Color(0xFF0075FF), // Blue icon
-                  size: 20,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth < 300) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      iconWidget,
+                      const SizedBox(width: 12),
+                      Expanded(child: labelWidget),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 50),
+                    child: valueWidget,
+                  ),
+                ],
+              );
+            }
+            return Row(
+              children: [
+                iconWidget,
+                const SizedBox(width: 14),
+                Expanded(flex: 3, child: labelWidget),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: valueWidget,
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(width: 14),
-
-            // Label
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF0F172A),
-              ),
-            ),
-            const SizedBox(width: 12),
-
-            // Value
-            Expanded(
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: customValueWidget ??
-                    Text(
-                      value,
-                      textAlign: TextAlign.right,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: isNA
-                            ? const Color(0xFF94A3B8)
-                            : const Color(0xFF64748B),
-                        height: 1.25,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-              ),
-            ),
-          ],
+              ],
+            );
+          },
         ),
       ),
     );
   }
 
   Widget _buildQuickUtilitiesGrid(BuildContext context, String defaultGateway) {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildUtilityCard(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 380;
+        final cards = <Widget>[
+          _buildUtilityCard(
             title: 'Ping & Jitter',
             subtitle: 'Latency test',
             icon: Icons.speed_rounded,
             iconColor: const Color(0xFF0075FF),
             bgColor: const Color(0xFFEFF6FF),
+            compact: compact,
             onTap: () {
               Navigator.push(
                 context,
@@ -742,44 +713,57 @@ class _HomescreenState extends State<Homescreen> {
               );
             },
           ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _buildUtilityCard(
+          _buildUtilityCard(
             title: 'Traceroute',
             subtitle: 'Hop path',
             icon: Icons.alt_route_rounded,
-            iconColor: const Color(0xFF8B5CF6),
-            bgColor: const Color(0xFFF5F3FF),
+            iconColor: const Color(0xFF0075FF),
+            bgColor: const Color(0xFFEFF6FF),
+            compact: compact,
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const TracerouteScreen(initialHost: 'google.com'),
+                  builder: (context) =>
+                      const TracerouteScreen(initialHost: 'google.com'),
                 ),
               );
             },
           ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _buildUtilityCard(
+          _buildUtilityCard(
             title: 'Wake-on-LAN',
             subtitle: 'Remote boot',
             icon: Icons.power_settings_new_rounded,
             iconColor: const Color(0xFF10B981),
             bgColor: const Color(0xFFECFDF5),
+            compact: compact,
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const WolScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const WolScreen()),
               );
             },
           ),
-        ),
-      ],
+        ];
+        if (compact) {
+          return Column(
+            children: [
+              for (var i = 0; i < cards.length; i++) ...[
+                if (i > 0) const SizedBox(height: 10),
+                cards[i],
+              ],
+            ],
+          );
+        }
+        return Row(
+          children: [
+            for (var i = 0; i < cards.length; i++) ...[
+              if (i > 0) const SizedBox(width: 10),
+              Expanded(child: cards[i]),
+            ],
+          ],
+        );
+      },
     );
   }
 
@@ -790,6 +774,7 @@ class _HomescreenState extends State<Homescreen> {
     required Color iconColor,
     required Color bgColor,
     required VoidCallback onTap,
+    required bool compact,
   }) {
     return Material(
       color: Colors.white,
@@ -801,10 +786,7 @@ class _HomescreenState extends State<Homescreen> {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: const Color(0xFFE2E8F0),
-              width: 1.2,
-            ),
+            border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.02),
@@ -813,7 +795,8 @@ class _HomescreenState extends State<Homescreen> {
               ),
             ],
           ),
-          child: Column(
+          child: Flex(
+            direction: compact ? Axis.horizontal : Axis.vertical,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
@@ -823,36 +806,55 @@ class _HomescreenState extends State<Homescreen> {
                   color: bgColor,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Center(
-                  child: Icon(icon, color: iconColor, size: 18),
-                ),
+                child: Center(child: Icon(icon, color: iconColor, size: 18)),
               ),
-              const SizedBox(height: 10),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
+              if (compact)
+                const SizedBox(width: 12)
+              else
+                const SizedBox(height: 10),
+              if (compact)
+                Expanded(child: _buildUtilityLabel(title, subtitle))
+              else
+                _buildUtilityLabel(title, subtitle),
+              if (compact)
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: Color(0xFF94A3B8),
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF64748B),
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildUtilityLabel(String title, String subtitle) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            color: Color(0xFF0F172A),
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 2),
+        Text(
+          subtitle,
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF64748B),
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
     );
   }
 }

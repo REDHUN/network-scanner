@@ -1,5 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:ip_tools/service/network_connectivity_service/network_connectivity_service.dart';
+
+const MethodChannel _wifiSettingsChannel = MethodChannel(
+  'ip_tools/wifi_settings',
+);
 
 class WiFiConnectionScreen extends StatefulWidget {
   final VoidCallback onWiFiConnected;
@@ -13,6 +20,9 @@ class WiFiConnectionScreen extends StatefulWidget {
 class _WiFiConnectionScreenState extends State<WiFiConnectionScreen> {
   final ConnectivityService _connectivityService = ConnectivityService();
   bool _isCheckingConnection = false;
+  StreamSubscription<bool>? _wifiStatusSubscription;
+  Timer? _wifiConnectionTimer;
+  bool _hasNotifiedForCurrentConnection = false;
 
   @override
   void initState() {
@@ -21,16 +31,44 @@ class _WiFiConnectionScreenState extends State<WiFiConnectionScreen> {
   }
 
   void _startListeningForWiFi() {
-    _connectivityService.wifiStatusStream().listen((isConnected) {
-      if (isConnected && mounted) {
-        // Small delay to ensure connection is stable
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (mounted) {
-            widget.onWiFiConnected();
-          }
-        });
-      }
+    _wifiStatusSubscription = _connectivityService.wifiStatusStream().listen(
+      _handleWiFiStatus,
+    );
+  }
+
+  void _handleWiFiStatus(bool isConnected) {
+    if (!isConnected) {
+      _resetConnectionNotification();
+      return;
+    }
+
+    if (!mounted ||
+        _hasNotifiedForCurrentConnection ||
+        _wifiConnectionTimer != null) {
+      return;
+    }
+
+    // Small delay to ensure connection is stable. Keep the timer so repeated
+    // stream events cannot queue multiple callbacks.
+    _wifiConnectionTimer = Timer(const Duration(milliseconds: 500), () {
+      _wifiConnectionTimer = null;
+      _notifyWiFiConnected();
     });
+  }
+
+  void _resetConnectionNotification() {
+    _wifiConnectionTimer?.cancel();
+    _wifiConnectionTimer = null;
+    _hasNotifiedForCurrentConnection = false;
+  }
+
+  void _notifyWiFiConnected() {
+    if (!mounted || _hasNotifiedForCurrentConnection) {
+      return;
+    }
+
+    _hasNotifiedForCurrentConnection = true;
+    widget.onWiFiConnected();
   }
 
   Future<void> _checkConnection() async {
@@ -40,8 +78,23 @@ class _WiFiConnectionScreenState extends State<WiFiConnectionScreen> {
 
     try {
       final isConnected = await _connectivityService.isWifiConnected();
-      if (isConnected && mounted) {
-        widget.onWiFiConnected();
+      if (isConnected) {
+        _wifiConnectionTimer?.cancel();
+        _wifiConnectionTimer = null;
+        _notifyWiFiConnected();
+      } else {
+        _resetConnectionNotification();
+        if (mounted) {
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'No Wi-Fi connection found. Connect to Wi-Fi and try again.',
+                ),
+              ),
+            );
+        }
       }
     } finally {
       if (mounted) {
@@ -52,181 +105,262 @@ class _WiFiConnectionScreenState extends State<WiFiConnectionScreen> {
     }
   }
 
-  void _openWiFiSettings() {
-    // This will open the device's WiFi settings
-    // Note: This requires platform-specific implementation
-    // For now, we'll show instructions
-    showDialog(
+  Future<void> _openWiFiSettings() async {
+    String? settingsDestination;
+    try {
+      settingsDestination = await _wifiSettingsChannel.invokeMethod<String>(
+        'openWifiSettings',
+      );
+    } on MissingPluginException {
+      // Keep the instructions available on unsupported platforms and in tests.
+    } on PlatformException {
+      // The dialog still provides a manual path if the settings activity fails.
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    // The settings screen is the primary flow. Only show the manual
+    // instructions when the platform cannot open settings (or when running
+    // on a platform without this bridge).
+    if (settingsDestination == 'wifi_settings' ||
+        settingsDestination == 'app_settings') {
+      return;
+    }
+
+    showDialog<void>(
       context: context,
-      builder: (context) => _buildWiFiInstructionsDialog(),
+      builder: (context) => _buildWiFiInstructionsDialog(
+        settingsDestination: settingsDestination,
+      ),
     );
   }
 
-  Widget _buildWiFiInstructionsDialog() {
+  Widget _buildWiFiInstructionsDialog({String? settingsDestination}) {
+    final isIosFallback =
+        settingsDestination?.startsWith('app_settings') ?? false;
+
     return Dialog(
-      backgroundColor: Theme.of(context).cardTheme.color,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: Colors.white,
+      elevation: 12,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 400),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Dialog Header
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF2C2C2E),
-                    Color(0xFF1C1C1E),
-                    Color(0xFF2C2C2E),
-                  ],
-                  stops: [0.0, 0.5, 1.0],
-                ),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
-                ),
-              ),
-              child: Row(
+        constraints: BoxConstraints(
+          maxWidth: 400,
+          maxHeight: MediaQuery.sizeOf(context).height * 0.9,
+        ),
+        padding: const EdgeInsets.all(24),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Dialog Header
+              Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFD4A574),
-                      borderRadius: BorderRadius.circular(6),
+                    width: 44,
+                    height: 44,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFEFF6FF),
+                      shape: BoxShape.circle,
                     ),
-                    child: const Icon(
-                      Icons.wifi_outlined,
-                      color: Color(0xFF2C2C2E),
-                      size: 16,
+                    child: const Center(
+                      child: Icon(
+                        Icons.wifi_rounded,
+                        color: Color(0xFF0075FF),
+                        size: 22,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 14),
                   const Expanded(
-                    child: Text(
-                      'Connect to WiFi',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.close,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Dialog Content
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'To use IP Tools, please connect to a WiFi network:',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).textTheme.headlineLarge?.color,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  _buildInstructionStep(
-                    '1',
-                    'Open your device Settings',
-                    Icons.settings,
-                  ),
-                  _buildInstructionStep(
-                    '2',
-                    'Navigate to WiFi or Network settings',
-                    Icons.wifi,
-                  ),
-                  _buildInstructionStep(
-                    '3',
-                    'Select and connect to a WiFi network',
-                    Icons.wifi_lock,
-                  ),
-                  _buildInstructionStep(
-                    '4',
-                    'Return to IP Tools - it will detect the connection automatically',
-                    Icons.check_circle,
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFD4A574).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: const Color(0xFFD4A574).withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(
-                          Icons.info_outline,
-                          color: Color(0xFFD4A574),
-                          size: 20,
+                        Text(
+                          'Connect to WiFi',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF111827),
+                            letterSpacing: -0.3,
+                          ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Network scanning requires an active WiFi connection to discover devices on your local network.',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Theme.of(
-                                context,
-                              ).textTheme.bodyMedium?.color,
-                            ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Step-by-step instructions',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF6B7280),
                           ),
                         ),
                       ],
                     ),
                   ),
-
-                  const SizedBox(height: 16),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
+                  SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: Semantics(
+                      button: true,
+                      label: 'Close instructions',
+                      child: IconButton(
                         onPressed: () => Navigator.of(context).pop(),
-                        child: const Text(
-                          'Got it',
+                        tooltip: 'Close instructions',
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 44,
+                          minHeight: 44,
+                        ),
+                        icon: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFF3F4F6),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.close_rounded,
+                            color: Color(0xFF6B7280),
+                            size: 18,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              const Text(
+                'To use IP Tools, please connect to a WiFi network:',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF374151),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              if (isIosFallback) ...[
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF7ED),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFFED7AA)),
+                  ),
+                  child: const Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.info_outline_rounded,
+                        color: Color(0xFFC2410C),
+                        size: 18,
+                      ),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'On iOS, IP Tools uses the app Settings page as a safe fallback because direct Wi-Fi navigation is not reliably supported. Use the back control in Settings, open Wi-Fi, connect, then return to IP Tools.',
                           style: TextStyle(
-                            color: Color(0xFFD4A574),
-                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: Color(0xFF7C2D12),
+                            height: 1.4,
                           ),
                         ),
                       ),
                     ],
                   ),
-                ],
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Instruction Steps
+              _buildInstructionStep(
+                '1',
+                'Open your device Settings',
+                Icons.settings_outlined,
               ),
-            ),
-          ],
+              _buildInstructionStep(
+                '2',
+                'Navigate to WiFi or Network settings',
+                Icons.wifi_rounded,
+              ),
+              _buildInstructionStep(
+                '3',
+                'Select and connect to a WiFi network',
+                Icons.wifi_lock_rounded,
+              ),
+              _buildInstructionStep(
+                '4',
+                'Return to IP Tools - it will detect the connection automatically',
+                Icons.check_circle_outline_rounded,
+              ),
+
+              const SizedBox(height: 16),
+
+              // Info Container
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF).withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFF0075FF).withValues(alpha: 0.2),
+                  ),
+                ),
+                child: const Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      color: Color(0xFF0075FF),
+                      size: 18,
+                    ),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Network scanning requires an active WiFi connection to discover devices on your local network.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF4B5563),
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Got it button
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0075FF),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                  ),
+                  child: const Text(
+                    'Got it',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -236,34 +370,41 @@ class _WiFiConnectionScreenState extends State<WiFiConnectionScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: const Color(0xFF2C2C2E),
-              borderRadius: BorderRadius.circular(16),
+            width: 26,
+            height: 26,
+            margin: const EdgeInsets.only(top: 1),
+            decoration: const BoxDecoration(
+              color: Color(0xFFEFF6FF),
+              shape: BoxShape.circle,
             ),
             child: Center(
               child: Text(
                 number,
                 style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF0075FF),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 12),
-          Icon(icon, color: const Color(0xFFD4A574), size: 20),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
+          Padding(
+            padding: const EdgeInsets.only(top: 3),
+            child: Icon(icon, color: const Color(0xFF0075FF), size: 18),
+          ),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               text,
-              style: TextStyle(
-                fontSize: 14,
-                color: Theme.of(context).textTheme.bodyMedium?.color,
+              style: const TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF374151),
+                height: 1.35,
               ),
             ),
           ),
@@ -274,10 +415,11 @@ class _WiFiConnectionScreenState extends State<WiFiConnectionScreen> {
 
   @override
   void dispose() {
+    _wifiConnectionTimer?.cancel();
+    _wifiStatusSubscription?.cancel();
     super.dispose();
   }
 
-  @override
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -293,23 +435,37 @@ class _WiFiConnectionScreenState extends State<WiFiConnectionScreen> {
                 children: [
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: GestureDetector(
-                      onTap: () {
-                        // Depending on routing, might want to pop or handle differently
-                        if (Navigator.canPop(context)) {
-                          Navigator.pop(context);
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFF3F4F6),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.arrow_back,
-                          color: Color(0xFF1F2937),
-                          size: 20,
+                    child: SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: Semantics(
+                        button: true,
+                        label: 'Back',
+                        child: IconButton(
+                          onPressed: () {
+                            if (Navigator.canPop(context)) {
+                              Navigator.pop(context);
+                            }
+                          },
+                          tooltip: 'Back',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 44,
+                            minHeight: 44,
+                          ),
+                          icon: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFF3F4F6),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.arrow_back,
+                              color: Color(0xFF1F2937),
+                              size: 20,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -345,7 +501,7 @@ class _WiFiConnectionScreenState extends State<WiFiConnectionScreen> {
                         boxShadow: [
                           BoxShadow(
                             color: const Color(
-                              0xFF656CEB,
+                              0xFF0075FF,
                             ).withValues(alpha: 0.05),
                             blurRadius: 40,
                             offset: const Offset(0, 10),
@@ -360,13 +516,13 @@ class _WiFiConnectionScreenState extends State<WiFiConnectionScreen> {
                             width: 100,
                             height: 100,
                             decoration: const BoxDecoration(
-                              color: Color(0xFFEEEDFF),
+                              color: Color(0xFFEFF6FF),
                               shape: BoxShape.circle,
                             ),
                             child: const Center(
                               child: Icon(
                                 Icons.wifi_off_rounded,
-                                color: Color(0xFF656CEB),
+                                color: Color(0xFF0075FF),
                                 size: 50,
                               ),
                             ),
@@ -390,7 +546,7 @@ class _WiFiConnectionScreenState extends State<WiFiConnectionScreen> {
                                 height: 8,
                                 decoration: BoxDecoration(
                                   color: const Color(
-                                    0xFF656CEB,
+                                    0xFF0075FF,
                                   ).withValues(alpha: 0.2),
                                   shape: BoxShape.circle,
                                 ),
@@ -454,7 +610,7 @@ class _WiFiConnectionScreenState extends State<WiFiConnectionScreen> {
                                 ? null
                                 : _checkConnection,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF656CEB),
+                              backgroundColor: const Color(0xFF0075FF),
                               foregroundColor: Colors.white,
                               elevation: 0,
                               shape: RoundedRectangleBorder(

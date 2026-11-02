@@ -76,7 +76,10 @@ class MainNavigationState extends State<MainNavigation>
       // Small delay to ensure system has updated permissions/settings
       Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted) {
-          final networkVM = Provider.of<NetworkViewModel>(context, listen: false);
+          final networkVM = Provider.of<NetworkViewModel>(
+            context,
+            listen: false,
+          );
           networkVM.loadNetworkInfo();
         }
       });
@@ -102,12 +105,12 @@ class MainNavigationState extends State<MainNavigation>
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEEEDFF),
+                    color: const Color(0xFFEFF6FF),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.wifi_find,
-                    color: Color(0xFF656CEB),
+                    color: Color(0xFF0075FF),
                     size: 32,
                   ),
                 ),
@@ -187,7 +190,7 @@ class MainNavigationState extends State<MainNavigation>
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF656CEB),
+                          backgroundColor: const Color(0xFF0075FF),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           elevation: 0,
@@ -293,99 +296,49 @@ class MainNavigationState extends State<MainNavigation>
     }
 
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(
-            top: BorderSide(
-              color: Colors.grey.withValues(alpha: 0.12),
-              width: 1,
-            ),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: Consumer<NetworkScannerProvider>(
-          builder: (context, scannerVM, _) {
-            final onlineCount = scannerVM.getOnlineDevices().length;
-            final showBadge = onlineCount > 0;
+      body: IndexedStack(index: _currentIndex, children: _screens),
+      bottomNavigationBar: Consumer<NetworkScannerProvider>(
+        builder: (context, scannerVM, _) {
+          final onlineCount = scannerVM.getOnlineDevices().length;
+          Widget devicesIcon(IconData icon) => Badge(
+            isLabelVisible: onlineCount > 0,
+            label: Text(onlineCount > 99 ? '99+' : '$onlineCount'),
+            child: Icon(icon),
+          );
 
-            return BottomNavigationBar(
-              currentIndex: _currentIndex,
-              onTap: (index) {
-                if (mounted) {
-                  setState(() => _currentIndex = index);
-                }
-              },
-              type: BottomNavigationBarType.fixed,
-              backgroundColor: Colors.white,
-              elevation: 0,
-              selectedItemColor: const Color(0xFF0075FF),
-              unselectedItemColor: const Color(0xFF94A3B8),
-              selectedLabelStyle: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.2,
+          return NavigationBar(
+            selectedIndex: _currentIndex,
+            onDestinationSelected: (index) =>
+                setState(() => _currentIndex = index),
+            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+            destinations: [
+              const NavigationDestination(
+                icon: Icon(Icons.space_dashboard_outlined),
+                selectedIcon: Icon(Icons.space_dashboard_rounded),
+                label: 'Dashboard',
+                tooltip: 'Dashboard',
               ),
-              unselectedLabelStyle: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.2,
+              NavigationDestination(
+                icon: devicesIcon(Icons.devices_outlined),
+                selectedIcon: devicesIcon(Icons.devices_rounded),
+                label: 'Devices',
+                tooltip: 'Devices',
               ),
-              items: [
-                const BottomNavigationBarItem(
-                  icon: Padding(
-                    padding: EdgeInsets.only(bottom: 4),
-                    child: Icon(Icons.grid_view_rounded, size: 22),
-                  ),
-                  label: 'Dashboard',
-                ),
-                BottomNavigationBarItem(
-                  icon: Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Badge(
-                      isLabelVisible: showBadge,
-                      label: Text(
-                        '$onlineCount',
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                      ),
-                      backgroundColor: const Color(0xFF4F46E5),
-                      child: const Icon(Icons.devices_rounded, size: 22),
-                    ),
-                  ),
-                  label: 'Devices',
-                ),
-                const BottomNavigationBarItem(
-                  icon: Padding(
-                    padding: EdgeInsets.only(bottom: 4),
-                    child: Icon(Icons.build_circle_rounded, size: 22),
-                  ),
-                  label: 'Tools',
-                ),
-                const BottomNavigationBarItem(
-                  icon: Padding(
-                    padding: EdgeInsets.only(bottom: 4),
-                    child: Icon(Icons.history_rounded, size: 22),
-                  ),
-                  label: 'History',
-                ),
-              ],
-            );
-          },
-        ),
+              const NavigationDestination(
+                icon: Icon(Icons.build_outlined),
+                selectedIcon: Icon(Icons.build_rounded),
+                label: 'Tools',
+                tooltip: 'Tools',
+              ),
+              const NavigationDestination(
+                icon: Icon(Icons.history_outlined),
+                selectedIcon: Icon(Icons.history_rounded),
+                label: 'History',
+                tooltip: 'History',
+              ),
+            ],
+          );
+        },
       ),
     );
   }

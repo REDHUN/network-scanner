@@ -235,24 +235,24 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
                     Icons.radar,
                     'Network Discovery',
                     'Find and identify local network\ninfrastructure automatically.',
-                    const Color(0xFFE5E7FA),
-                    const Color(0xFF656CEB),
+                    const Color(0xFFEFF6FF),
+                    const Color(0xFF0075FF),
                   ),
                   const SizedBox(height: 16),
                   _buildFeatureItem(
                     Icons.cell_wifi,
                     'Network Information',
                     'Access detailed Wi-Fi and\ncellular connectivity data in real-time.',
-                    const Color(0xFFE5E7FA),
-                    const Color(0xFF656CEB),
+                    const Color(0xFFEFF6FF),
+                    const Color(0xFF0075FF),
                   ),
                   const SizedBox(height: 16),
                   _buildFeatureItem(
                     Icons.devices_other,
                     'Device Detection',
                     'Detect and catalog all devices\nconnected to your secure network.',
-                    const Color(0xFFE5E7FA),
-                    const Color(0xFF656CEB),
+                    const Color(0xFFEFF6FF),
+                    const Color(0xFF0075FF),
                   ),
 
                   const Spacer(),
@@ -267,7 +267,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen>
                         child: ElevatedButton(
                           onPressed: _isLoading ? null : _requestPermission,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF656CEB),
+                            backgroundColor: const Color(0xFF0075FF),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 18),
                             shape: RoundedRectangleBorder(

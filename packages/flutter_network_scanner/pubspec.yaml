@@ -25,3 +25,5 @@ flutter:
       android:
         package: com.example.flutter_network_scanner
         pluginClass: FlutterNetworkScannerPlugin
+      ios:
+        pluginClass: FlutterNetworkScannerPlugin

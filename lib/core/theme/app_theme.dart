@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:ip_tools/common/appconstants/app_colors.dart';
 
 class AppTheme {
-  // Modern Slate & Electric Blue theme palette
-  static const Color _primaryBlue = Color(0xFF0075FF);
-  static const Color _primaryDark = Color(0xFF1E6BFF);
-  static const Color _backgroundLight = Color(0xFFF8FAFC);
+  // Keep the original brand blue while using Material 3 Expressive tonal surfaces.
+  static const Color _primaryBlue = AppColors.primary;
+  static const Color _backgroundLight = Color(0xFFF7F8FC);
   static const Color _cardLight = Colors.white;
   static const Color _textDark = Color(0xFF0F172A);
   static const Color _textMedium = Color(0xFF64748B);
@@ -20,18 +20,39 @@ class AppTheme {
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: _primaryBlue,
-        brightness: Brightness.light,
-        primary: _primaryBlue,
-        secondary: _primaryDark,
-        surface: _cardLight,
-        onPrimary: Colors.white,
-        onSecondary: Colors.white,
-        onSurface: _textDark,
-      ),
+      colorScheme:
+          ColorScheme.fromSeed(
+            seedColor: _primaryBlue,
+            dynamicSchemeVariant: DynamicSchemeVariant.expressive,
+            brightness: Brightness.light,
+          ).copyWith(
+            primary: _primaryBlue,
+            onPrimary: Colors.white,
+            primaryContainer: const Color(0xFFE4F1FF),
+            onPrimaryContainer: const Color(0xFF003E80),
+            secondary: _primaryBlue,
+            onSecondary: Colors.white,
+            secondaryContainer: const Color(0xFFE4F1FF),
+            onSecondaryContainer: const Color(0xFF003E80),
+            surfaceTint: _primaryBlue,
+          ),
       textTheme: GoogleFonts.interTextTheme(
         TextTheme(
+          displaySmall: GoogleFonts.inter(
+            color: _textDark,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -1.2,
+          ),
+          headlineSmall: GoogleFonts.inter(
+            color: _textDark,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.6,
+          ),
+          titleLarge: GoogleFonts.inter(
+            color: _textDark,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.4,
+          ),
           headlineLarge: GoogleFonts.inter(
             color: _textDark,
             fontWeight: FontWeight.w700,
@@ -51,9 +72,59 @@ class AppTheme {
         ),
       ),
       scaffoldBackgroundColor: _backgroundLight,
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: _cardLight,
+        indicatorColor: const Color(0xFFE4F1FF),
+        indicatorShape: const StadiumBorder(),
+        height: 78,
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => GoogleFonts.inter(
+            fontSize: 11,
+            fontWeight: states.contains(WidgetState.selected)
+                ? FontWeight.w700
+                : FontWeight.w500,
+            color: states.contains(WidgetState.selected)
+                ? _primaryBlue
+                : _textMedium,
+          ),
+        ),
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            size: 24,
+            color: states.contains(WidgetState.selected)
+                ? _primaryBlue
+                : _textMedium,
+          ),
+        ),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: _cardLight,
+        selectedColor: const Color(0xFFE4F1FF),
+        side: BorderSide.none,
+        shape: const StadiumBorder(),
+        labelStyle: GoogleFonts.inter(
+          fontWeight: FontWeight.w600,
+          color: _textDark,
+        ),
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: _primaryBlue,
+        linearTrackColor: Color(0xFFE5E9F6),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          minimumSize: const Size(64, 48),
+          shape: const StadiumBorder(),
+          textStyle: GoogleFonts.inter(fontWeight: FontWeight.w700),
+        ),
+      ),
+      dividerTheme: const DividerThemeData(
+        color: Color(0xFFE5E8F1),
+        thickness: 1,
+      ),
       appBarTheme: AppBarTheme(
         centerTitle: false,
-        backgroundColor: Colors.transparent,
+        backgroundColor: _backgroundLight,
         elevation: 0,
         titleTextStyle: GoogleFonts.inter(
           fontSize: 22,
@@ -67,8 +138,8 @@ class AppTheme {
         elevation: 0,
         shadowColor: Colors.black.withValues(alpha: 0.04),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: _borderLight, width: 1),
+          borderRadius: BorderRadius.circular(28),
+          side: const BorderSide(color: _borderLight, width: 0.8),
         ),
       ),
       popupMenuTheme: PopupMenuThemeData(
@@ -90,9 +161,7 @@ class AppTheme {
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         elevation: 12,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -101,7 +170,7 @@ class AppTheme {
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(24),
           ),
           textStyle: GoogleFonts.inter(
             fontSize: 15,
@@ -150,16 +219,22 @@ class AppTheme {
   static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: _primaryBlue,
-        brightness: Brightness.dark,
-        primary: _primaryBlue,
-        secondary: _primaryDark,
-        surface: _cardDark,
-        onPrimary: Colors.white,
-        onSecondary: Colors.white,
-        onSurface: _textLight,
-      ),
+      colorScheme:
+          ColorScheme.fromSeed(
+            seedColor: _primaryBlue,
+            dynamicSchemeVariant: DynamicSchemeVariant.expressive,
+            brightness: Brightness.dark,
+          ).copyWith(
+            primary: _primaryBlue,
+            onPrimary: Colors.white,
+            primaryContainer: const Color(0xFF173E70),
+            onPrimaryContainer: Colors.white,
+            secondary: _primaryBlue,
+            onSecondary: Colors.white,
+            secondaryContainer: const Color(0xFF173E70),
+            onSecondaryContainer: Colors.white,
+            surfaceTint: _primaryBlue,
+          ),
       textTheme: GoogleFonts.interTextTheme(
         TextTheme(
           headlineLarge: GoogleFonts.inter(
@@ -181,9 +256,26 @@ class AppTheme {
         ),
       ),
       scaffoldBackgroundColor: _backgroundDark,
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: _cardDark,
+        indicatorColor: const Color(0xFF173E70),
+        indicatorShape: const StadiumBorder(),
+        height: 78,
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => GoogleFonts.inter(
+            fontSize: 11,
+            fontWeight: states.contains(WidgetState.selected)
+                ? FontWeight.w700
+                : FontWeight.w500,
+            color: states.contains(WidgetState.selected)
+                ? _textLight
+                : _textMuted,
+          ),
+        ),
+      ),
       appBarTheme: AppBarTheme(
         centerTitle: false,
-        backgroundColor: Colors.transparent,
+        backgroundColor: _backgroundDark,
         elevation: 0,
         titleTextStyle: GoogleFonts.inter(
           fontSize: 22,
@@ -220,9 +312,7 @@ class AppTheme {
         backgroundColor: _cardDark,
         surfaceTintColor: Colors.transparent,
         elevation: 12,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(

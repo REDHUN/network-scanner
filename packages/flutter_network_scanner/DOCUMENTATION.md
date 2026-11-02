@@ -26,7 +26,7 @@
 
 ## Architecture & Discovery Pipeline
 
-`flutter_network_scanner` uses a hybrid native execution model. Intensive network sweeps run concurrently across a native background thread pool (64 worker threads), executing multiple discovery protocols in parallel before aggregating the results back to the Flutter runtime.
+`flutter_network_scanner` uses a hybrid native execution model. Intensive network sweeps run concurrently across native workers (up to 64 workers), executing TCP discovery probes before aggregating the results back to the Flutter runtime. Android selects the Wi-Fi interface attached to the active `ConnectivityManager` network and adds UPnP/SSDP, NetBIOS, reverse-DNS, and HTTP metadata enrichment; iOS uses the active IPv4 interface exposed by BSD socket APIs and TCP discovery. Very large subnets are rejected rather than generating an unsafe unbounded sweep.
 
 ```
                      ┌───────────────────────────────┐
@@ -36,7 +36,7 @@
                                     │ MethodChannel
                                     ▼
                      ┌───────────────────────────────┐
-                     │   Native Kotlin Core Plugin   │
+                      │ Native Platform Plugin Core   │
                      │ (FlutterNetworkScannerPlugin) │
                      └──────────────┬────────────────┘
                                     │
@@ -96,6 +96,10 @@ Add the required permissions in `android/app/src/main/AndroidManifest.xml`:
 </manifest>
 ```
 
+### 3. iOS Configuration
+
+The package supports iOS 12.0 and later. The host application should include `NSLocalNetworkUsageDescription` in `Info.plist` so iOS can request local-network access. No third-party iOS dependency is required; the plugin uses `Network`, BSD sockets, and interface enumeration APIs available in the deployment target. iOS may return `null` for SSID, MAC, hostname, or default gateway fields when privacy restrictions prevent access.
+
 ---
 
 ## Android 10+ Privacy & MAC Address Handling
@@ -112,6 +116,10 @@ Rather than relying on restricted MAC addresses, `flutter_network_scanner` queri
 3. **HTTP / Web Title Extraction**: Connects to ports 80, 8080, and 8008 to parse `<title>` tags (e.g. *TP-Link Router*, *Synology DiskStation*).
 4. **Reverse DNS**: Resolves canonical PTR hostnames.
 
+Android also runs a Wi-Fi subnet sweep, collects any accessible `REACHABLE` neighbor entries while probes run, compares the final neighbor table with a pre-scan snapshot, and browses mDNS services. An old `STALE` entry is not counted as online; a newly created entry with a valid MAC can be included even if it aged to `STALE` by the end of the sweep. On Android 10+, neighbor-table access may be denied, so devices that do not answer any accessible discovery method cannot be guaranteed to appear. This app does not request Shizuku or root privileges.
+
+For already-discovered devices without a usable name, Android asks the Wi-Fi gateway for a reverse-DNS (PTR) name. Responses are bounded by a short timeout and validated before being displayed; PTR records never establish that a host is online.
+
 ---
 
 ## API Reference
@@ -121,7 +129,7 @@ Rather than relying on restricted MAC addresses, `flutter_network_scanner` queri
 The main static interface for interacting with the plugin.
 
 #### `scanNetwork({int timeoutMs = 250}) -> Future<List<DiscoveredDevice>>`
-Scans the current active `/24` subnet across 64 native background threads.
+Scans the current active IPv4 subnet across up to 64 native background threads.
 * **Parameters**:
   * `timeoutMs` *(int, default: 250)*: Timeout per TCP socket connect probe.
 * **Returns**: A list of `DiscoveredDevice` objects sorted numerically by IP.

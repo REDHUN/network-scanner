@@ -85,7 +85,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back,
-            color: Color(0xFF656CEB),
+            color: Color(0xFF0075FF),
             size: 24,
           ),
           onPressed: () => Navigator.pop(context),
@@ -103,7 +103,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _shareDeviceInfo,
-        backgroundColor: const Color(0xFF656CEB),
+        backgroundColor: const Color(0xFF0075FF),
         icon: const Icon(Icons.share, color: Colors.white),
         label: const Text(
           'Share',
@@ -124,7 +124,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                     width: 120,
                     height: 120,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEEEDFF),
+                      color: const Color(0xFFEFF6FF),
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 4),
                       boxShadow: [
@@ -138,7 +138,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                     child: Center(
                       child: Icon(
                         _getDeviceIcon(),
-                        color: const Color(0xFF656CEB),
+                        color: const Color(0xFF0075FF),
                         size: 50,
                       ),
                     ),
@@ -214,7 +214,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF656CEB),
+                        color: Color(0xFF0075FF),
                         letterSpacing: 1.2,
                       ),
                     ),
@@ -279,7 +279,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                         children: [
                           const Icon(
                             Icons.radar,
-                            color: Color(0xFF656CEB),
+                            color: Color(0xFF0075FF),
                             size: 20,
                           ),
                           const SizedBox(width: 8),
@@ -288,7 +288,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFF656CEB),
+                              color: Color(0xFF0075FF),
                               letterSpacing: 1.2,
                             ),
                           ),
@@ -300,7 +300,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF656CEB).withValues(alpha: 0.1),
+                                color: const Color(0xFF0075FF).withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Row(
@@ -309,7 +309,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                                     width: 8,
                                     height: 8,
                                     decoration: const BoxDecoration(
-                                      color: Color(0xFF656CEB),
+                                      color: Color(0xFF0075FF),
                                       shape: BoxShape.circle,
                                     ),
                                   ),
@@ -319,7 +319,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                                     style: const TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
-                                      color: Color(0xFF656CEB),
+                                      color: Color(0xFF0075FF),
                                     ),
                                   ),
                                 ],
@@ -392,7 +392,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                                       style: const TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w800,
-                                        color: Color(0xFF656CEB),
+                                        color: Color(0xFF0075FF),
                                       ),
                                     ),
                                   ],
@@ -406,7 +406,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                                     backgroundColor: const Color(0xFFE5E7EB),
                                     valueColor:
                                         const AlwaysStoppedAnimation<Color>(
-                                      Color(0xFF656CEB),
+                                      Color(0xFF0075FF),
                                     ),
                                   ),
                                 ),
@@ -435,7 +435,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: _isScanning
                                   ? const Color(0xFFEF4444)
-                                  : const Color(0xFF656CEB),
+                                  : const Color(0xFF0075FF),
                               foregroundColor: Colors.white,
                               elevation: 0,
                               shape: RoundedRectangleBorder(
@@ -530,7 +530,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: const BorderSide(
-                color: Color(0xFF656CEB),
+                color: Color(0xFF0075FF),
                 width: 1.5,
               ),
             ),
@@ -569,7 +569,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: const BorderSide(
-                color: Color(0xFF656CEB),
+                color: Color(0xFF0075FF),
                 width: 1.5,
               ),
             ),
@@ -618,11 +618,11 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFFEEEDFF).withValues(alpha: 0.3) : Colors.white,
+          color: selected ? const Color(0xFFEFF6FF).withValues(alpha: 0.3) : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: selected
-                ? const Color(0xFF656CEB)
+                ? const Color(0xFF0075FF)
                 : const Color(0xFFE5E7EB),
             width: selected ? 1.8 : 1.0,
           ),
@@ -636,7 +636,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: selected
-                      ? const Color(0xFF656CEB)
+                      ? const Color(0xFF0075FF)
                       : const Color(0xFFD1D5DB),
                   width: selected ? 5.5 : 1.5,
                 ),
@@ -726,7 +726,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildStatBox('SCANNED', '$totalScanned'),
-              _buildStatBox('OPEN', '${_openPorts.length}', color: const Color(0xFF656CEB)),
+              _buildStatBox('OPEN', '${_openPorts.length}', color: const Color(0xFF0075FF)),
               _buildStatBox('TIME', '${durationSeconds}s'),
             ],
           ),
@@ -857,7 +857,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                     port.banner!,
                     style: const TextStyle(
                       fontSize: 11,
-                      color: Color(0xFF656CEB),
+                      color: Color(0xFF0075FF),
                       fontWeight: FontWeight.w500,
                       fontFamily: 'monospace',
                     ),
@@ -1143,7 +1143,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF656CEB),
+              color: Color(0xFF0075FF),
               letterSpacing: 1.2,
             ),
           ),
@@ -1173,8 +1173,8 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
                   title: 'Trace',
                   subtitle: 'Route Path',
                   icon: Icons.alt_route_rounded,
-                  color: const Color(0xFF8B5CF6),
-                  bgColor: const Color(0xFFF5F3FF),
+                  color: const Color(0xFF0075FF),
+                  bgColor: const Color(0xFFEFF6FF),
                   onTap: () {
                     Navigator.push(
                       context,

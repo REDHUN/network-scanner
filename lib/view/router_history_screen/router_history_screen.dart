@@ -34,10 +34,10 @@ class _RouterHistoryScreenState extends State<RouterHistoryScreen> {
       final routers = await scannerVM.getAllRouterNetworks();
       final currentRouterId = await scannerVM.getCurrentRouterId();
 
-      print('🔍 Debug: Loaded ${routers.length} routers');
-      print('🔍 Debug: Current router ID: $currentRouterId');
+      debugPrint('Loaded ${routers.length} routers');
+      debugPrint('Current router ID: $currentRouterId');
       for (final router in routers) {
-        print(
+        debugPrint(
           '🔍 Debug: Router ${router.routerId} - ${router.wifiName} (${router.devices.length} devices)',
         );
       }
@@ -48,7 +48,7 @@ class _RouterHistoryScreenState extends State<RouterHistoryScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      print('❌ Error loading router data: $e');
+      debugPrint('Error loading router data: $e');
       setState(() {
         _isLoading = false;
       });
@@ -58,7 +58,7 @@ class _RouterHistoryScreenState extends State<RouterHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Column(
           children: [
@@ -71,46 +71,26 @@ class _RouterHistoryScreenState extends State<RouterHistoryScreen> {
               child: Row(
                 children: [
                   if (Navigator.canPop(context))
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        padding: const EdgeInsets.only(right: 16),
-                        child: const Icon(
-                          Icons.arrow_back,
-                          color: Color(0xFF656CEB),
-                          size: 26,
-                        ),
-                      ),
+                    IconButton(
+                      tooltip: 'Back',
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.arrow_back_rounded),
                     ),
-                  const Text(
+                  Text(
                     'History',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF111827),
-                      letterSpacing: -0.5,
-                    ),
+                    style: Theme.of(context).textTheme.headlineSmall,
                   ),
                 ],
               ),
             ),
 
             // Top Divider
-            Divider(
-              height: 1,
-              color: const Color(0xFFE5E7EB).withValues(alpha: 0.6),
-            ),
+            const Divider(height: 1),
 
             // Content
             Expanded(
               child: _isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          Color(0xFF656CEB),
-                        ),
-                      ),
-                    )
+                  ? const Center(child: CircularProgressIndicator())
                   : _routers.isEmpty
                   ? _buildEmptyState()
                   : _buildRouterList(),
@@ -164,7 +144,7 @@ class _RouterHistoryScreenState extends State<RouterHistoryScreen> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surfaceContainerLow,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
                 color: const Color(0xFFE5E7EB).withValues(alpha: 0.6),
@@ -182,12 +162,12 @@ class _RouterHistoryScreenState extends State<RouterHistoryScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEEEDFF),
+                    color: Theme.of(context).colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.history,
-                    color: Color(0xFF656CEB),
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
                     size: 24,
                   ),
                 ),
@@ -261,7 +241,10 @@ class _RouterHistoryScreenState extends State<RouterHistoryScreen> {
     final totalDevices = router.devices.length;
 
     // The current network gets a slightly highlighted border or background
-    final backgroundColor = isCurrent ? Colors.white : const Color(0xFFF9FAFB);
+    final scheme = Theme.of(context).colorScheme;
+    final backgroundColor = isCurrent
+        ? scheme.primaryContainer
+        : scheme.surfaceContainerLow;
 
     return GestureDetector(
       onTap: () {
@@ -275,10 +258,10 @@ class _RouterHistoryScreenState extends State<RouterHistoryScreen> {
           borderRadius: BorderRadius.circular(24),
           border: isCurrent
               ? Border.all(
-                  color: const Color(0xFF656CEB).withValues(alpha: 0.3),
-                  width: 2,
+                  color: scheme.primary.withValues(alpha: 0.3),
+                  width: 1,
                 )
-              : Border.all(color: const Color(0xFFE5E7EB)),
+              : Border.all(color: scheme.outlineVariant),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: isCurrent ? 0.04 : 0.02),
@@ -297,15 +280,13 @@ class _RouterHistoryScreenState extends State<RouterHistoryScreen> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: isCurrent
-                        ? const Color(0xFFEEEDFF)
-                        : const Color(0xFFE5E7EB),
+                        ? scheme.surfaceContainerLow
+                        : scheme.surfaceContainerHigh,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Icon(
                     Icons.router,
-                    color: isCurrent
-                        ? const Color(0xFF656CEB)
-                        : const Color(0xFF6B7280),
+                    color: isCurrent ? scheme.primary : scheme.onSurfaceVariant,
                     size: 24,
                   ),
                 ),
@@ -373,7 +354,9 @@ class _RouterHistoryScreenState extends State<RouterHistoryScreen> {
             const SizedBox(height: 20),
 
             // Device Stats
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 _buildStatChip(
                   'Total',
@@ -381,14 +364,12 @@ class _RouterHistoryScreenState extends State<RouterHistoryScreen> {
                   const Color(0xFF4B5563),
                   const Color(0xFFF3F4F6),
                 ),
-                const SizedBox(width: 12),
                 _buildStatChip(
                   'Online',
                   onlineDevices.toString(),
                   const Color(0xFF10B981),
                   const Color(0xFF10B981).withValues(alpha: 0.1),
                 ),
-                const SizedBox(width: 12),
                 _buildStatChip(
                   'Offline',
                   offlineDevices.toString(),
@@ -538,7 +519,7 @@ class _RouterHistoryScreenState extends State<RouterHistoryScreen> {
                     style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF656CEB),
+                    backgroundColor: const Color(0xFF0075FF),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     elevation: 0,
@@ -677,7 +658,7 @@ class _RouterHistoryScreenState extends State<RouterHistoryScreen> {
   }
 
   void _deleteRouter(String routerId) async {
-    print('🗑️ Starting deletion process for router: $routerId');
+    debugPrint('Starting deletion process for router: $routerId');
 
     try {
       final scannerVM = context.read<NetworkScannerProvider>();
@@ -686,16 +667,16 @@ class _RouterHistoryScreenState extends State<RouterHistoryScreen> {
       final currentRouterId = await scannerVM.getCurrentRouterId();
       final isDeletingCurrentRouter = currentRouterId == routerId;
 
-      print('🔍 Current router ID: $currentRouterId');
-      print('🔍 Is deleting current router: $isDeletingCurrentRouter');
+      debugPrint('Current router ID: $currentRouterId');
+      debugPrint('Is deleting current router: $isDeletingCurrentRouter');
 
       // Call the storage service to delete router data
       await scannerVM.deleteRouterData(routerId);
-      print('✅ Storage service delete completed');
+      debugPrint('Storage service delete completed');
 
       // Refresh the router list
       await _loadRouterData();
-      print('✅ Router list refreshed');
+      debugPrint('Router list refreshed');
 
       if (mounted) {
         SnackbarUtils.showSuccess(
@@ -707,12 +688,12 @@ class _RouterHistoryScreenState extends State<RouterHistoryScreen> {
 
         // If we deleted the current router, go back to devices screen
         if (isDeletingCurrentRouter) {
-          print('🔄 Navigating back to devices screen');
+          debugPrint('Navigating back to devices screen');
           Navigator.pop(context);
         }
       }
     } catch (e) {
-      print('❌ Error in delete process: $e');
+      debugPrint('Error in delete process: $e');
       if (mounted) {
         SnackbarUtils.showError(context, 'Failed to delete network data: $e');
       }

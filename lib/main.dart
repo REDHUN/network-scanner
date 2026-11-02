@@ -11,6 +11,24 @@ import 'service/network_connectivity_service/network_connectivity_service.dart';
 import 'service/network_service/network_service.dart';
 import 'service/permission_service/permission_service.dart';
 
+final GlobalKey<ScaffoldMessengerState> appScaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
+
+void _showReviewContextMessage() {
+  final messenger = appScaffoldMessengerKey.currentState;
+  if (messenger == null) return;
+
+  messenger.showSnackBar(
+    const SnackBar(
+      content: Text(
+        'Scan complete — if IP Tools is useful, a quick rating helps us improve.',
+      ),
+      behavior: SnackBarBehavior.floating,
+      duration: Duration(seconds: 2),
+    ),
+  );
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -42,12 +60,17 @@ class MyApp extends StatelessWidget {
             context.read<ConnectivityService>(),
           ),
         ),
-        ChangeNotifierProvider(create: (c) => NetworkScannerProvider()),
+        ChangeNotifierProvider(
+          create: (_) => NetworkScannerProvider(
+            onReviewPromptEligible: _showReviewContextMessage,
+          ),
+        ),
       ],
       child: MaterialApp(
         title: 'IP Tools : Network Scanner',
         theme: AppTheme.lightTheme,
         home: const SplashScreen(),
+        scaffoldMessengerKey: appScaffoldMessengerKey,
         debugShowCheckedModeBanner: false,
       ),
     );

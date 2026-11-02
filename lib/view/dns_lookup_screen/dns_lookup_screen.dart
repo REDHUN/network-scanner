@@ -582,7 +582,7 @@ class _DnsLookupScreenState extends State<DnsLookupScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF6366F1),
+                        color: const Color(0xFF0075FF),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: const Text(

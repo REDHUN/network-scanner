@@ -9,8 +9,8 @@ A high-performance local network scanner and device discovery plugin for Flutter
 
 ## Features
 
-* ⚡ **High-Speed Subnet Sweeping**: Concurrently probes the `/24` subnet across multi-threaded native workers in milliseconds.
-* 🔍 **Multi-Protocol Host Resolution**:
+* ⚡ **High-Speed Subnet Sweeping**: Concurrently probes the active IPv4 subnet using its advertised prefix, with a safety bound for unusually large networks.
+* 🔍 **Multi-Protocol Host Resolution on Android**:
   * **UPnP / SSDP (UDP 1900)**: Extracts `<friendlyName>`, `<manufacturer>`, `<modelName>`, and device types from Smart TVs, Media Servers, and Printers.
   * **NetBIOS (UDP 137)**: Queries Windows and Samba/NAS machine names.
   * **Reverse DNS PTR**: Canonical host resolution for routers, servers, and desktops.
@@ -53,6 +53,17 @@ Add the following permissions to your `android/app/src/main/AndroidManifest.xml`
 ```
 
 > **Note on MAC Addresses (Android 10+)**: Starting in Android 10 (API 29), Google restricts access to `/proc/net/arp` and kernel routing tables for all non-root apps. `flutter_network_scanner` gracefully reads MAC addresses opportunistically when available, and uses UPnP, SSDP, mDNS, and NetBIOS to identify device names and manufacturers when MAC is protected.
+
+### iOS
+
+The package supports iOS 12.0 and later using Apple's Network framework and BSD interface APIs. Add the local-network usage description to the host app's `Info.plist` (the iOS local-network prompt is shown by the system when discovery first runs):
+
+```xml
+<key>NSLocalNetworkUsageDescription</key>
+<string>This app needs access to the local network to discover and scan devices.</string>
+```
+
+The iOS implementation reports the same MethodChannel result keys as Android and performs TCP-based discovery. Hardware MAC addresses, Wi-Fi SSID, hostnames, and the default gateway may be unavailable because iOS restricts those values; they are returned as `null` when the system does not expose them. Android provides the additional UPnP/SSDP, NetBIOS, and HTTP metadata pipeline.
 
 ---
 
@@ -122,7 +133,7 @@ print('Open ports on target: $openPorts');
 
 | Method | Return Type | Description |
 | :--- | :--- | :--- |
-| `scanNetwork({int timeoutMs = 250})` | `Future<List<DiscoveredDevice>>` | Concurrently scans the active subnet `/24` range. |
+| `scanNetwork({int timeoutMs = 250})` | `Future<List<DiscoveredDevice>>` | Concurrently scans the active IPv4 subnet range. Subnets larger than the native safety limit are rejected. |
 | `getNetworkInfo()` | `Future<NetworkInfoModel?>` | Fetches local IP, subnet, gateway, SSID, and interface. |
 | `pingHost(String ip, {int timeoutMs = 500})` | `Future<int>` | Measures ping latency in ms (-1 if unreachable). |
 | `scanPorts(String ip, {List<int>? ports, int timeoutMs = 300})` | `Future<List<int>>` | Scans target TCP ports. |

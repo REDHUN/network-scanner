@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ip_tools/common/widgets/wavy_scan_progress_indicator.dart';
 import 'package:ip_tools/common/utils/snackbar_utils.dart';
 import 'package:ip_tools/models/network_model/network_info_model.dart';
 import 'package:ip_tools/models/network_model/scanned_device.dart';
@@ -20,7 +21,7 @@ class DevicesScreen extends StatefulWidget {
 
 class _DevicesScreenState extends State<DevicesScreen> {
   final ShareService _shareService = ShareService();
-  String _selectedFilter = 'All'; // 'All', 'Online', 'Offline', 'Gateways'
+  String _selectedFilter = 'All'; // 'All', 'Online', 'Saved', 'Gateways'
   String _selectedSort = 'Default'; // 'Default', 'IP', 'Name'
   bool _isInitializing = true;
 
@@ -75,25 +76,25 @@ class _DevicesScreenState extends State<DevicesScreen> {
   }
 
   String _getSubnetDisplay(NetworkInfoModel? info) {
-    if (info == null) return 'Subnet: Scanning...';
+    if (info == null) return 'Local network not available';
     if (info.wifiIP != null && info.subnet != null) {
       try {
         final ipParts = info.wifiIP!.split('.').map(int.parse).toList();
         final subParts = info.subnet!.split('.').map(int.parse).toList();
-        if (ipParts.length == 4 && subParts.length == 4) {
+        if (ipParts.length == 4 &&
+            subParts.length == 4 &&
+            ipParts.every((part) => part >= 0 && part <= 255) &&
+            subParts.every((part) => part >= 0 && part <= 255) &&
+            info.cidr != null) {
           final net = List.generate(4, (i) => (ipParts[i] & subParts[i]));
-          final cidr = info.cidr ?? '/24';
-          return 'Subnet: ${net.join('.')}$cidr';
+          return 'Subnet: ${net.join('.')}${info.cidr}';
         }
       } catch (_) {}
     }
-    if (info.wifiIP != null) {
-      final parts = info.wifiIP!.split('.');
-      if (parts.length == 4) {
-        return 'Subnet: ${parts[0]}.${parts[1]}.${parts[2]}.0/24';
-      }
+    if (info.wifiIP != null && info.wifiIP!.isNotEmpty) {
+      return 'Local IP: ${info.wifiIP}';
     }
-    return 'Subnet: 10.0.2.0/24';
+    return 'Local network not available';
   }
 
   @override
@@ -103,7 +104,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
     final subnetText = _getSubnetDisplay(networkVM.networkInfo);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: Column(
           children: [
@@ -114,7 +115,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
             Expanded(
               child:
                   scannerVM.state == ScanState.error &&
-                      scannerVM.devices.isEmpty
+                      scannerVM.getAllDevicesWithStatus().isEmpty
                   ? _buildErrorState(scannerVM)
                   : _buildDevicesContent(scannerVM),
             ),
@@ -134,132 +135,52 @@ class _DevicesScreenState extends State<DevicesScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Title & Subnet
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Devices',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w900,
-                  color: Color(0xFF0F172A),
-                  letterSpacing: -0.6,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Devices',
+                  style: Theme.of(context).textTheme.headlineSmall,
                 ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                subnetText,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF64748B),
+                const SizedBox(height: 3),
+                Text(
+                  subnetText,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
 
           // Top Action Buttons
           Row(
             children: [
               // History Icon Button
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const RouterHistoryScreen(),
-                      ),
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: const Color(0xFFE2E8F0),
-                        width: 1.2,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.03),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.access_time_rounded,
-                      color: Color(0xFF475569),
-                      size: 20,
-                    ),
+              IconButton.filledTonal(
+                tooltip: 'Network history',
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const RouterHistoryScreen(),
                   ),
                 ),
+                icon: const Icon(Icons.history_rounded),
               ),
 
               const SizedBox(width: 10),
 
               // Stop / Scan Pill Button
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    if (isScanning) {
-                      scannerVM.stopScan();
-                    } else {
-                      scannerVM.startScan();
-                    }
-                  },
-                  borderRadius: BorderRadius.circular(20),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isScanning
-                          ? const Color(0xFFFEF2F2)
-                          : const Color(0xFFEFF6FF),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: isScanning
-                            ? const Color(0xFFFECACA)
-                            : const Color(0xFFBFDBFE),
-                        width: 1.2,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isScanning
-                              ? Icons.stop_rounded
-                              : Icons.refresh_rounded,
-                          size: 16,
-                          color: isScanning
-                              ? const Color(0xFFEF4444)
-                              : const Color(0xFF0075FF),
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          isScanning ? 'Stop' : 'Scan',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: isScanning
-                                ? const Color(0xFFEF4444)
-                                : const Color(0xFF0075FF),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+              FilledButton.tonalIcon(
+                onPressed: isScanning
+                    ? scannerVM.stopScan
+                    : scannerVM.startScan,
+                icon: Icon(
+                  isScanning ? Icons.stop_rounded : Icons.radar_rounded,
+                  size: 18,
                 ),
+                label: Text(isScanning ? 'Stop' : 'Scan'),
               ),
             ],
           ),
@@ -269,9 +190,9 @@ class _DevicesScreenState extends State<DevicesScreen> {
   }
 
   Widget _buildDevicesContent(NetworkScannerProvider provider) {
-    final onlineDevices = provider.getOnlineDevices();
-    final offlineDevices = provider.getOfflineDevices();
     final allDevices = provider.getAllDevicesWithStatus();
+    final onlineDevices = allDevices.where((d) => d.isOnline).toList();
+    final savedDevices = allDevices.where((d) => !d.isOnline).toList();
     final gatewayDevices = allDevices.where((d) => d.isGateway).toList();
     final isScanning = provider.state == ScanState.scanning || _isInitializing;
 
@@ -281,8 +202,8 @@ class _DevicesScreenState extends State<DevicesScreen> {
       case 'Online':
         filteredDevices = onlineDevices;
         break;
-      case 'Offline':
-        filteredDevices = offlineDevices;
+      case 'Saved':
+        filteredDevices = savedDevices;
         break;
       case 'Gateways':
         filteredDevices = gatewayDevices;
@@ -324,15 +245,29 @@ class _DevicesScreenState extends State<DevicesScreen> {
           if (isScanning)
             _buildScanProgressBanner(provider, onlineDevices.length),
 
+          if (provider.state == ScanState.done && !_isInitializing)
+            _buildScanResultBanner(provider),
+
+          if (provider.state == ScanState.error && allDevices.isNotEmpty)
+            _buildScanErrorBanner(provider),
+
           const SizedBox(height: 14),
 
-          // 2. Status Stats Summary Cards (ONLINE & OFFLINE)
+          // 2. Current findings and saved history
           Row(
             children: [
               Expanded(child: _buildOnlineStatCard(onlineDevices.length)),
               const SizedBox(width: 14),
-              Expanded(child: _buildOfflineStatCard(offlineDevices.length)),
+              Expanded(child: _buildOfflineStatCard(savedDevices.length)),
             ],
+          ),
+
+          const SizedBox(height: 8),
+          Text(
+            'Online: found now  •  Saved: seen on earlier scans',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
 
           const SizedBox(height: 18),
@@ -341,7 +276,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
           _buildFilterChipsRow(
             allCount: allDevices.length,
             onlineCount: onlineDevices.length,
-            offlineCount: offlineDevices.length,
+            offlineCount: savedDevices.length,
             gatewaysCount: gatewayDevices.length,
           ),
 
@@ -353,10 +288,10 @@ class _DevicesScreenState extends State<DevicesScreen> {
           const SizedBox(height: 12),
 
           // 5. Device List
-          if (filteredDevices.isEmpty && isScanning)
+          if (filteredDevices.isEmpty && isScanning && _selectedFilter == 'All')
             _buildInitialScanningState()
           else if (filteredDevices.isEmpty)
-            _buildEmptyState()
+            _buildEmptyState(provider)
           else
             ListView.separated(
               shrinkWrap: true,
@@ -369,16 +304,10 @@ class _DevicesScreenState extends State<DevicesScreen> {
               },
             ),
 
-          // 6. Probing In-Progress Card (shown while scanning)
-          if (isScanning) ...[
-            const SizedBox(height: 12),
-            _buildProbingCard(provider),
-          ],
-
           const SizedBox(height: 24),
 
           // 7. Share Scan Results Full-Width Button
-          _buildShareButton(allDevices),
+          _buildShareButton(allDevices, isScanning: isScanning),
 
           const SizedBox(height: 30),
         ],
@@ -408,9 +337,8 @@ class _DevicesScreenState extends State<DevicesScreen> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFEFF6FF), width: 1.5),
+        color: Theme.of(context).colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF1E293B).withValues(alpha: 0.04),
@@ -431,7 +359,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Scanning Local Network...',
+                      'Searching for devices',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
@@ -440,18 +368,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    // Progress Bar
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: LinearProgressIndicator(
-                        value: provider.progress.clamp(0.0, 1.0),
-                        minHeight: 6,
-                        backgroundColor: const Color(0xFFF1F5F9),
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                          Color(0xFF4F46E5),
-                        ),
-                      ),
-                    ),
+                    WavyScanProgressIndicator(value: provider.progress),
                   ],
                 ),
               ),
@@ -465,10 +382,10 @@ class _DevicesScreenState extends State<DevicesScreen> {
                 child: Center(
                   child: Text(
                     '$percent%',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF6366F1),
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                 ),
@@ -478,9 +395,11 @@ class _DevicesScreenState extends State<DevicesScreen> {
 
           const SizedBox(height: 14),
 
-          // Subtitle Stats Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // Wrap progress details instead of clipping on compact screens.
+          Wrap(
+            spacing: 12,
+            runSpacing: 4,
+            alignment: WrapAlignment.spaceBetween,
             children: [
               Text(
                 '${provider.scannedCount} of ${provider.totalCount} hosts checked',
@@ -518,20 +437,80 @@ class _DevicesScreenState extends State<DevicesScreen> {
     );
   }
 
+  Widget _buildScanResultBanner(NetworkScannerProvider provider) {
+    final completed = provider.progress >= 1;
+    final scheme = Theme.of(context).colorScheme;
+    return Semantics(
+      liveRegion: true,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: scheme.primaryContainer,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              completed
+                  ? Icons.check_circle_rounded
+                  : Icons.pause_circle_rounded,
+              color: scheme.primary,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                completed
+                    ? 'Scan complete · ${provider.devices.length} found now'
+                    : 'Scan stopped · results may be incomplete',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: scheme.onPrimaryContainer,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScanErrorBanner(NetworkScannerProvider provider) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: scheme.errorContainer,
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Icon(Icons.error_outline_rounded, color: scheme.onErrorContainer),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Scan failed. Saved devices are still shown.',
+                  style: TextStyle(color: scheme.onErrorContainer),
+                ),
+              ),
+              TextButton(
+                onPressed: provider.startScan,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildOnlineStatCard(int count) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFF1F5F9), width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF1E293B).withValues(alpha: 0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        color: const Color(0xFFECFDF5),
+        borderRadius: BorderRadius.circular(28),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -567,37 +546,14 @@ class _DevicesScreenState extends State<DevicesScreen> {
 
           const SizedBox(height: 12),
 
-          // Count & Badge
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '$count',
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w900,
-                  color: Color(0xFF0F172A),
-                  height: 1,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFECFDF5),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFA7F3D0), width: 1),
-                ),
-                child: const Text(
-                  'Active',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF059669),
-                  ),
-                ),
-              ),
-            ],
+          Text(
+            '$count',
+            style: const TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF0F172A),
+              height: 1,
+            ),
           ),
         ],
       ),
@@ -605,19 +561,12 @@ class _DevicesScreenState extends State<DevicesScreen> {
   }
 
   Widget _buildOfflineStatCard(int count) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFF1F5F9), width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF1E293B).withValues(alpha: 0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        color: scheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(28),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -633,14 +582,14 @@ class _DevicesScreenState extends State<DevicesScreen> {
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
-                  Icons.close_rounded,
+                  Icons.history_rounded,
                   color: Color(0xFF94A3B8),
                   size: 12,
                 ),
               ),
               const SizedBox(width: 6),
               const Text(
-                'OFFLINE',
+                'SAVED',
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
@@ -653,36 +602,14 @@ class _DevicesScreenState extends State<DevicesScreen> {
 
           const SizedBox(height: 12),
 
-          // Count & Badge
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '$count',
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w900,
-                  color: Color(0xFF0F172A),
-                  height: 1,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  count > 0 ? '$count past' : 'All linked',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF64748B),
-                  ),
-                ),
-              ),
-            ],
+          Text(
+            '$count',
+            style: const TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF0F172A),
+              height: 1,
+            ),
           ),
         ],
       ),
@@ -703,7 +630,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
           const SizedBox(width: 8),
           _buildFilterChip('Online', onlineCount),
           const SizedBox(width: 8),
-          _buildFilterChip('Offline', offlineCount),
+          _buildFilterChip('Saved', offlineCount),
           const SizedBox(width: 8),
           _buildFilterChip('Gateways', gatewaysCount),
         ],
@@ -713,52 +640,24 @@ class _DevicesScreenState extends State<DevicesScreen> {
 
   Widget _buildFilterChip(String label, int count) {
     final isSelected = _selectedFilter == label;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => setState(() => _selectedFilter = label),
-        borderRadius: BorderRadius.circular(20),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF4F46E5) : Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isSelected
-                  ? const Color(0xFF4F46E5)
-                  : const Color(0xFFE2E8F0),
-              width: 1.2,
-            ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: const Color(0xFF4F46E5).withValues(alpha: 0.25),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Text(
-            '$label ($count)',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-              color: isSelected ? Colors.white : const Color(0xFF475569),
-            ),
-          ),
-        ),
-      ),
+    return FilterChip(
+      label: Text('$label ($count)'),
+      selected: isSelected,
+      showCheckmark: false,
+      onSelected: (_) => setState(() => _selectedFilter = label),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
     );
   }
 
   Widget _buildSectionHeader(int count, bool isScanning) {
-    return Row(
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      alignment: WrapAlignment.spaceBetween,
       children: [
         Text(
-          'DETECTED DEVICES ($count)',
+          'DEVICES ($count)',
           style: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w800,
@@ -766,7 +665,6 @@ class _DevicesScreenState extends State<DevicesScreen> {
             letterSpacing: 0.8,
           ),
         ),
-        const SizedBox(width: 8),
         if (isScanning)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -794,7 +692,6 @@ class _DevicesScreenState extends State<DevicesScreen> {
               ],
             ),
           ),
-        const Spacer(),
         // Sort Menu
         PopupMenuButton<String>(
           initialValue: _selectedSort,
@@ -813,10 +710,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
             decoration: BoxDecoration(
               color: const Color(0xFFEFF6FF),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: const Color(0xFFDBEAFE),
-                width: 1,
-              ),
+              border: Border.all(color: const Color(0xFFDBEAFE), width: 1),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -844,11 +738,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
               'Default (Router first)',
               Icons.auto_awesome_rounded,
             ),
-            _buildSortMenuItem(
-              'IP',
-              'IP Address',
-              Icons.numbers_rounded,
-            ),
+            _buildSortMenuItem('IP', 'IP Address', Icons.numbers_rounded),
             _buildSortMenuItem(
               'Name',
               'Device Name',
@@ -911,33 +801,26 @@ class _DevicesScreenState extends State<DevicesScreen> {
   }
 
   Widget _buildModernDeviceCard(StoredDevice device) {
+    final scheme = Theme.of(context).colorScheme;
     final displayName = _getDeviceDisplayName(device);
     final isGateway = device.isGateway;
     final isSelf = device.isSelf;
 
-    // Role badge
-    final String roleTag;
-    final Color roleBg;
-    final Color roleTextColor;
-
-    if (isSelf) {
-      roleTag = 'You';
-      roleBg = const Color(0xFFEEF2FF);
-      roleTextColor = const Color(0xFF4F46E5);
-    } else if (isGateway) {
-      roleTag = 'Gateway';
-      roleBg = const Color(0xFFFAF5FF);
-      roleTextColor = const Color(0xFF9333EA);
-    } else {
-      roleTag = 'Node';
-      roleBg = const Color(0xFFF1F5F9);
-      roleTextColor = const Color(0xFF64748B);
-    }
+    final roleTag = isSelf ? 'You' : 'Gateway';
+    final roleBg = isSelf ? scheme.primaryContainer : scheme.secondaryContainer;
+    final roleTextColor = isSelf
+        ? scheme.onPrimaryContainer
+        : scheme.onSecondaryContainer;
 
     final iconData = _getDeviceIcon(device);
 
     return Material(
-      color: Colors.transparent,
+      color: scheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(26),
+        side: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () {
           Navigator.push(
@@ -950,21 +833,8 @@ class _DevicesScreenState extends State<DevicesScreen> {
             ),
           );
         },
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
+        child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFF1F5F9), width: 1.2),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF1E293B).withValues(alpha: 0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
           child: Row(
             children: [
               // Icon Box
@@ -973,19 +843,19 @@ class _DevicesScreenState extends State<DevicesScreen> {
                 height: 46,
                 decoration: BoxDecoration(
                   color: isSelf
-                      ? const Color(0xFFEEF2FF)
+                      ? scheme.primaryContainer
                       : isGateway
-                      ? const Color(0xFFFAF5FF)
-                      : const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(14),
+                      ? scheme.secondaryContainer
+                      : scheme.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(18),
                 ),
                 child: Icon(
                   iconData,
                   color: isSelf
-                      ? const Color(0xFF4F46E5)
+                      ? scheme.onPrimaryContainer
                       : isGateway
-                      ? const Color(0xFF9333EA)
-                      : const Color(0xFF64748B),
+                      ? scheme.onSecondaryContainer
+                      : scheme.onSurfaceVariant,
                   size: 22,
                 ),
               ),
@@ -1003,49 +873,51 @@ class _DevicesScreenState extends State<DevicesScreen> {
                         Flexible(
                           child: Text(
                             displayName,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF0F172A),
-                              letterSpacing: -0.2,
-                            ),
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w700),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: roleBg,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            roleTag,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: roleTextColor,
+                        if (isSelf || isGateway) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: roleBg,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              roleTag,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: roleTextColor,
+                              ),
                             ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
 
                     const SizedBox(height: 5),
 
-                    // Subtitle: IP • Connection info
+                    // IP and current-scan status; saved devices are not confirmed offline.
                     Row(
                       children: [
-                        Text(
-                          device.ip,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF64748B),
+                        Flexible(
+                          child: Text(
+                            device.ip,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF64748B),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -1057,14 +929,27 @@ class _DevicesScreenState extends State<DevicesScreen> {
                           ),
                         ),
                         const SizedBox(width: 6),
-                        Icon(
-                          isGateway
-                              ? Icons.settings_ethernet_rounded
-                              : Icons.wifi_rounded,
-                          size: 13,
-                          color: const Color(0xFF94A3B8),
+                        Container(
+                          width: 7,
+                          height: 7,
+                          decoration: BoxDecoration(
+                            color: device.isOnline
+                                ? const Color(0xFF059669)
+                                : scheme.onSurfaceVariant,
+                            shape: BoxShape.circle,
+                          ),
                         ),
                         const SizedBox(width: 4),
+                        Text(
+                          device.isOnline ? 'Online' : 'Saved',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: device.isOnline
+                                ? const Color(0xFF047857)
+                                : scheme.onSurfaceVariant,
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -1073,7 +958,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
 
               const SizedBox(width: 8),
 
-              // Status Dot, Delete Button & Arrow
+              // Saved-device action and detail affordance
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -1084,36 +969,11 @@ class _DevicesScreenState extends State<DevicesScreen> {
                         color: Color(0xFFEF4444),
                         size: 20,
                       ),
-                      padding: const EdgeInsets.all(4),
-                      constraints: const BoxConstraints(),
-                      tooltip: 'Delete offline device',
+                      tooltip: 'Remove saved device ${device.ip}',
                       onPressed: () =>
                           _confirmDeleteOfflineDevice(context, device),
                     ),
-                    const SizedBox(width: 6),
                   ],
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: device.isOnline
-                          ? const Color(0xFF10B981)
-                          : const Color(0xFFCBD5E1),
-                      shape: BoxShape.circle,
-                      boxShadow: device.isOnline
-                          ? [
-                              BoxShadow(
-                                color: const Color(
-                                  0xFF10B981,
-                                ).withValues(alpha: 0.4),
-                                blurRadius: 4,
-                                spreadRadius: 1,
-                              ),
-                            ]
-                          : null,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
                   const Icon(
                     Icons.chevron_right_rounded,
                     color: Color(0xFFCBD5E1),
@@ -1128,138 +988,25 @@ class _DevicesScreenState extends State<DevicesScreen> {
     );
   }
 
-  Widget _buildProbingCard(NetworkScannerProvider provider) {
-    final nextHost = (provider.scannedCount + 1).clamp(1, 254);
-    final prefix = _getIpPrefix(provider);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFBFDBFE), width: 1.2),
-      ),
-      child: Row(
-        children: [
-          // Spinner
-          Container(
-            width: 42,
-            height: 42,
-            padding: const EdgeInsets.all(10),
-            decoration: const BoxDecoration(
-              color: Color(0xFFEFF6FF),
-              shape: BoxShape.circle,
-            ),
-            child: const CircularProgressIndicator(
-              strokeWidth: 2.5,
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3B82F6)),
-            ),
-          ),
-
-          const SizedBox(width: 14),
-
-          // Probing details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Probing $prefix.$nextHost...',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1E293B),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                const Text(
-                  'Testing ARP & socket probes',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF64748B),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // In Progress Badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFEEF2FF),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Text(
-              'In progress',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF4F46E5),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _getIpPrefix(NetworkScannerProvider provider) {
-    if (provider.currentNetworkInfo?.wifiIP != null) {
-      final parts = provider.currentNetworkInfo!.wifiIP!.split('.');
-      if (parts.length == 4) {
-        return '${parts[0]}.${parts[1]}.${parts[2]}';
-      }
-    }
-    return '10.0.2';
-  }
-
-  Widget _buildShareButton(List<StoredDevice> allDevices) {
-    return Container(
+  Widget _buildShareButton(
+    List<StoredDevice> allDevices, {
+    required bool isScanning,
+  }) {
+    return SizedBox(
       width: double.infinity,
       height: 52,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF2563EB).withValues(alpha: 0.35),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            final scanned = allDevices.map((d) => d.toScannedDevice()).toList();
-            _shareNetworkSummary(scanned);
-          },
-          borderRadius: BorderRadius.circular(18),
-          child: const Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.share_rounded, color: Colors.white, size: 20),
-                SizedBox(width: 8),
-                Text(
-                  'Share Scan Results',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    letterSpacing: 0.2,
-                  ),
-                ),
-              ],
-            ),
-          ),
+      child: FilledButton.icon(
+        onPressed: allDevices.isEmpty
+            ? null
+            : () {
+                final scanned = allDevices
+                    .map((d) => d.toScannedDevice())
+                    .toList();
+                _shareNetworkSummary(scanned);
+              },
+        icon: const Icon(Icons.ios_share_rounded),
+        label: Text(
+          isScanning ? 'Share current device list' : 'Share device list',
         ),
       ),
     );
@@ -1276,7 +1023,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
               height: 40,
               child: CircularProgressIndicator(
                 strokeWidth: 3,
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4F46E5)),
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0075FF)),
               ),
             ),
             SizedBox(height: 16),
@@ -1299,30 +1046,51 @@ class _DevicesScreenState extends State<DevicesScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(NetworkScannerProvider provider) {
+    final filtered = _selectedFilter != 'All';
+    final title = switch (_selectedFilter) {
+      'Online' => 'No online devices yet',
+      'Saved' => 'No saved devices',
+      'Gateways' => 'No gateways',
+      _ => 'No devices found',
+    };
+    final description = filtered
+        ? 'Try another filter or show all devices.'
+        : 'Scan this network to discover nearby devices.';
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 40.0),
         child: Column(
-          children: const [
-            Icon(
+          children: [
+            const Icon(
               Icons.devices_other_rounded,
               size: 56,
               color: Color(0xFF94A3B8),
             ),
-            SizedBox(height: 14),
+            const SizedBox(height: 14),
             Text(
-              'No devices found',
-              style: TextStyle(
+              title,
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF1E293B),
               ),
             ),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text(
-              'Tap Scan above to discover devices on your LAN',
-              style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+              description,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+            ),
+            const SizedBox(height: 12),
+            TextButton.icon(
+              onPressed: filtered
+                  ? () => setState(() => _selectedFilter = 'All')
+                  : provider.startScan,
+              icon: Icon(
+                filtered ? Icons.filter_alt_off_rounded : Icons.radar_rounded,
+              ),
+              label: Text(filtered ? 'Show all devices' : 'Scan network'),
             ),
           ],
         ),
@@ -1361,7 +1129,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
             ElevatedButton.icon(
               onPressed: () => provider.startScan(),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4F46E5),
+                backgroundColor: const Color(0xFF0075FF),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -1386,13 +1154,20 @@ class _DevicesScreenState extends State<DevicesScreen> {
   String _getDeviceDisplayName(StoredDevice device) {
     if (device.isSelf) return 'This Device';
     if (device.isGateway) return 'Home Router';
-    if (device.mdns != null && device.mdns!.isNotEmpty) return device.mdns!;
+    if (device.mdns != null &&
+        device.mdns!.isNotEmpty &&
+        !device.mdns!.contains('@') &&
+        !device.mdns!.contains(':')) {
+      return device.mdns!;
+    }
     if (device.name != null &&
         device.name!.isNotEmpty &&
-        !device.name!.startsWith('Device (')) {
+        !device.name!.startsWith('Device (') &&
+        !device.name!.contains('@') &&
+        !device.name!.contains(':')) {
       return device.name!;
     }
-    return 'Desktop PC';
+    return 'Network Device';
   }
 
   IconData _getDeviceIcon(StoredDevice device) {
@@ -1446,7 +1221,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
 
               // Title
               const Text(
-                'Delete Offline Device',
+                'Remove saved device',
                 style: TextStyle(
                   fontSize: 19,
                   fontWeight: FontWeight.w800,
@@ -1459,7 +1234,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
 
               // Description
               Text(
-                'Are you sure you want to remove ${_getDeviceDisplayName(device)} (${device.ip}) from your saved offline devices?',
+                'Remove ${_getDeviceDisplayName(device)} (${device.ip}) from this network’s saved devices?',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 14,
@@ -1522,7 +1297,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 13),
                       ),
                       child: const Text(
-                        'Delete',
+                        'Remove',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
